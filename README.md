@@ -30,7 +30,7 @@ This script enables keepers of the Keep3r Network to execute Phuture's job on Et
   yarn build
 ```
 
-2. Run the job directly from javascript. Using [PM2](https://github.com/Unitech/pm2) is highly recommended
+2. Run the job directly from javascript (using [PM2](https://github.com/Unitech/pm2) is highly recommended)
 ```
   node dist/job.js
 ```
