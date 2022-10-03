@@ -1,8 +1,7 @@
-import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
-import type {TransactionRequest} from '@ethersproject/abstract-provider';
-import type {Contract} from 'ethers';
-import {providers, Wallet} from 'ethers';
-import isEqual from 'lodash.isequal';
+import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+import type { TransactionRequest } from '@ethersproject/abstract-provider';
+import type { Contract } from 'ethers';
+import { providers, Wallet } from 'ethers';
 import {
   createBundlesWithSameTxs,
   getMainnetGasType2Parameters,
@@ -11,12 +10,9 @@ import {
   Flashbots,
   BlockListener,
 } from '@keep3r-network/keeper-scripting-utils';
-import {request} from 'undici';
 import dotenv from 'dotenv';
-import {OrderType} from './types';
-import type {ExternalOrder, InternalOrder, Order} from './types';
-import {getEnvVariable} from './utils';
-import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE} from './contants';
+import { getEnvVariable } from '../utils';
+import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE } from '../contants';
 
 dotenv.config();
 
@@ -25,13 +21,12 @@ dotenv.config();
 /*============================================================== */
 
 // environment variables usage
-console.log(getEnvVariable('RPC_WSS_URI'));
 const provider = new providers.WebSocketProvider(getEnvVariable('RPC_WSS_URI'));
 const txSigner = new Wallet(getEnvVariable('TX_SIGNER_PRIVATE_KEY'), provider);
 const bundleSigner = new Wallet(getEnvVariable('BUNDLE_SIGNER_PRIVATE_KEY'), provider);
 
 const blockListener = new BlockListener(provider);
-const job = getMainnetSdk(txSigner).job;
+const job = getMainnetSdk(txSigner).depositManagerJob;
 
 /* ==============================================================/*
 		                   MAIN SCRIPT
@@ -50,56 +45,15 @@ export function run(flashbots: Flashbots): void {
       return;
     }
 
-    // Check if the job is paused
-    const paused = await job.paused();
+    // Check if job is workable
+    const canUpdate = await job.canUpdateDeposits();
 
-    // If it's paused, then return
-    if (paused) {
-      console.info('Job is paused. Returning...');
+    if (!canUpdate) {
+      console.log('Deposits are not updateable at this time. Restarting the script...');
       return;
     }
 
-    // Call the API to see if there's an order that needs to be executed
-    const {statusCode, body} = await request(ORDER_API_URL);
-
-    // Emit the logs according to the status code the API gave us. If the status code is not 200, return.
-    switch (statusCode) {
-      case 200:
-        console.debug(`Got 200 OK from Validator.`);
-        break;
-      case 404:
-        console.debug(`Error 404: There are no orders currently. Retrying in next block.`);
-        return;
-      default:
-        console.debug(`Expected to get 200 OK from Validator but instead got ${statusCode}.`);
-        return;
-    }
-
-    // If we get 200 as the status code, we parse the body of the response
-    const {type, signs, ...order} = (await body.json()) as Order;
-
-    // Define variables whose values will depend on whether we need to send a external or internal order
-    let functionToCall: 'externalSwap' | 'internalSwap';
-    let orderParameter: Omit<Order, 'type' | 'signs'>;
-
-    // Set functionToCall and orderType values according to whether the order to send is external or internal. If it's none, return.
-    switch (type) {
-      case OrderType.External: {
-        functionToCall = 'externalSwap';
-        orderParameter = (order as ExternalOrder).external;
-        break;
-      }
-
-      case OrderType.Internal: {
-        functionToCall = 'internalSwap';
-        orderParameter = (order as InternalOrder).internal;
-        break;
-      }
-
-      default:
-        console.error(`Unexpected order type received`);
-        return;
-    }
+    console.log('Deposits are updateable.');
 
     // If we arrived here, it means we will be sending a transaction, so we optimistically set this to true.
     txInProgress = true;
@@ -112,7 +66,7 @@ export function run(flashbots: Flashbots): void {
 				For example: we are in block 100 and we send to 100, 101, 102. We would like to know what is the maximum possible
 				base fee at block 102 to make sure we don't populate our transactions with a very low maxFeePerGas, as this would
 				cause our transaction to not be mined until the max base fee lowers.
-			*/
+	*/
     const blocksAhead = FUTURE_BLOCKS + BURST_SIZE;
 
     // Get the signer's (keeper) current nonce.
@@ -121,7 +75,7 @@ export function run(flashbots: Flashbots): void {
     // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
     // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
     //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-    const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
+    const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
       block,
       blocksAhead,
       priorityFeeInWei: PRIORITY_FEE,
@@ -140,8 +94,8 @@ export function run(flashbots: Flashbots): void {
     const txs: TransactionRequest[] = await populateTransactions({
       chainId: CHAIN_ID,
       contract: job as Contract,
-      functionArgs: [[signs, orderParameter]],
-      functionName: functionToCall,
+      functionArgs: [[]],
+      functionName: 'updateDeposits',
       options,
     });
 
@@ -167,26 +121,14 @@ export function run(flashbots: Flashbots): void {
       flashbots,
       signer: txSigner,
       async isWorkableCheck() {
-        // This job does not have a workable check. But we can check that the order we should call has not been called
-        // by doing a call to their API. If the status is not 200, it means that the order is not available anymore.
-        // If the status is 200, but a different order from the one we populated the first time we fetched the API is
-        // returned, then we need to return and recompute our transaction to work that new order.
-        const {statusCode, body} = await request(ORDER_API_URL);
-        if (statusCode !== 200) return false;
-        const {type, signs, ...order} = (await body.json()) as Order;
-
-        // If the returned type is either external or internal
-        if (Object.values(OrderType).includes(type)) {
-          const parameter = (order as ExternalOrder).external || (order as InternalOrder).internal;
-          // We verify that the work needed is still the same as the one requested initially
-          if (functionToCall === `${type}Swap` && isEqual(parameter, orderParameter)) return true;
-          // In case not, restart the script
-          console.log('The order differs from the one in our transaction. Restarting the script.');
+        // Provide the function with a function to re-check whether the deposits can still be updated
+        // after a batch of bundles fails to be included
+        const canUpdate = await job.canUpdateDeposits();
+        if (!canUpdate) {
+          console.log('Deposits are not updateable at this time. Restarting the script...');
           return false;
         }
-
-        console.error(`Unexpected order type received. Restarting the script.`);
-        return false;
+        return true;
       },
     });
 
@@ -198,7 +140,7 @@ export function run(flashbots: Flashbots): void {
     blockListener.stop();
     // We unsubscribe from our Observable.
     sub.unsubscribe();
-    // We call our main function recursively so that it waits until the job is workable again to try to work the job again.
+    // We call our main function recursively so that it tries to work the job until it is workable.
     run(flashbots);
   });
 }
