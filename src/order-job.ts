@@ -13,10 +13,10 @@ import {
 } from '@keep3r-network/keeper-scripting-utils';
 import {request} from 'undici';
 import dotenv from 'dotenv';
-import {OrderType} from './types';
-import type {ExternalOrder, InternalOrder, Order} from './types';
-import {getEnvVariable} from './utils';
-import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE} from './contants';
+import {OrderType} from './utils/types';
+import type {ExternalOrder, InternalOrder, Order} from './utils/types';
+import {getEnvVariable} from './utils/misc';
+import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE} from './utils/contants';
 
 dotenv.config();
 
@@ -25,13 +25,12 @@ dotenv.config();
 /*============================================================== */
 
 // environment variables usage
-console.log(getEnvVariable('RPC_WSS_URI'));
 const provider = new providers.WebSocketProvider(getEnvVariable('RPC_WSS_URI'));
 const txSigner = new Wallet(getEnvVariable('TX_SIGNER_PRIVATE_KEY'), provider);
 const bundleSigner = new Wallet(getEnvVariable('BUNDLE_SIGNER_PRIVATE_KEY'), provider);
 
 const blockListener = new BlockListener(provider);
-const job = getMainnetSdk(txSigner).job;
+const job = getMainnetSdk(txSigner).orderJob;
 
 /* ==============================================================/*
 		                   MAIN SCRIPT
@@ -198,7 +197,7 @@ export function run(flashbots: Flashbots): void {
     blockListener.stop();
     // We unsubscribe from our Observable.
     sub.unsubscribe();
-    // We call our main function recursively so that it waits until the job is workable again to try to work the job again.
+    // We call our main function recursively so that it tries to work the job until it is workable.
     run(flashbots);
   });
 }

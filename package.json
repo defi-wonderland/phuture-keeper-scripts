@@ -18,9 +18,11 @@
   ],
   "private": true,
   "scripts": {
-    "start": "ts-node src/job.ts",
+    "start:order": "ts-node src/order-job.ts",
+    "start:deposit-manager": "ts-node src/deposit-manager-job.ts",
     "build": "eth-sdk && tsc",
-    "prod": "node dist/tsc/src/job.js",
+    "prod:order": "node dist/src/order-job.js",
+    "prod:deposit-manager": "node dist/src/deposit-manager-job.js",
     "lint": "xo",
     "lint:fix": "xo --fix"
   },
