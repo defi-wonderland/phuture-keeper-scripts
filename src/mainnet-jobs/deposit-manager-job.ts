@@ -1,7 +1,7 @@
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
-import type { TransactionRequest } from '@ethersproject/abstract-provider';
-import type { Contract } from 'ethers';
-import { providers, Wallet } from 'ethers';
+import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
+import type {TransactionRequest} from '@ethersproject/abstract-provider';
+import type {Contract} from 'ethers';
+import {providers, Wallet} from 'ethers';
 import {
   createBundlesWithSameTxs,
   getMainnetGasType2Parameters,
@@ -11,8 +11,8 @@ import {
   BlockListener,
 } from '@keep3r-network/keeper-scripting-utils';
 import dotenv from 'dotenv';
-import { getEnvVariable } from '../utils';
-import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE } from '../contants';
+import {getEnvVariable} from '../utils';
+import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE} from '../contants';
 
 dotenv.config();
 
@@ -75,7 +75,7 @@ export function run(flashbots: Flashbots): void {
     // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
     // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
     //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-    const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
+    const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
       block,
       blocksAhead,
       priorityFeeInWei: PRIORITY_FEE,
@@ -128,6 +128,7 @@ export function run(flashbots: Flashbots): void {
           console.log('Deposits are not updateable at this time. Restarting the script...');
           return false;
         }
+
         return true;
       },
     });

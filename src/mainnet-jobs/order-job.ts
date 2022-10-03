@@ -1,7 +1,7 @@
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
-import type { TransactionRequest } from '@ethersproject/abstract-provider';
-import type { Contract } from 'ethers';
-import { providers, Wallet } from 'ethers';
+import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
+import type {TransactionRequest} from '@ethersproject/abstract-provider';
+import type {Contract} from 'ethers';
+import {providers, Wallet} from 'ethers';
 import isEqual from 'lodash.isequal';
 import {
   createBundlesWithSameTxs,
@@ -11,12 +11,12 @@ import {
   Flashbots,
   BlockListener,
 } from '@keep3r-network/keeper-scripting-utils';
-import { request } from 'undici';
+import {request} from 'undici';
 import dotenv from 'dotenv';
-import { OrderType } from '../types';
-import type { ExternalOrder, InternalOrder, Order } from '../types';
-import { getEnvVariable } from '../utils';
-import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE } from '../contants';
+import {OrderType} from '../types';
+import type {ExternalOrder, InternalOrder, Order} from '../types';
+import {getEnvVariable} from '../utils';
+import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE} from '../contants';
 
 dotenv.config();
 
@@ -59,7 +59,7 @@ export function run(flashbots: Flashbots): void {
     }
 
     // Call the API to see if there's an order that needs to be executed
-    const { statusCode, body } = await request(ORDER_API_URL);
+    const {statusCode, body} = await request(ORDER_API_URL);
 
     // Emit the logs according to the status code the API gave us. If the status code is not 200, return.
     switch (statusCode) {
@@ -75,7 +75,7 @@ export function run(flashbots: Flashbots): void {
     }
 
     // If we get 200 as the status code, we parse the body of the response
-    const { type, signs, ...order } = (await body.json()) as Order;
+    const {type, signs, ...order} = (await body.json()) as Order;
 
     // Define variables whose values will depend on whether we need to send a external or internal order
     let functionToCall: 'externalSwap' | 'internalSwap';
@@ -120,7 +120,7 @@ export function run(flashbots: Flashbots): void {
     // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
     // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
     //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-    const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
+    const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
       block,
       blocksAhead,
       priorityFeeInWei: PRIORITY_FEE,
@@ -170,9 +170,9 @@ export function run(flashbots: Flashbots): void {
         // by doing a call to their API. If the status is not 200, it means that the order is not available anymore.
         // If the status is 200, but a different order from the one we populated the first time we fetched the API is
         // returned, then we need to return and recompute our transaction to work that new order.
-        const { statusCode, body } = await request(ORDER_API_URL);
+        const {statusCode, body} = await request(ORDER_API_URL);
         if (statusCode !== 200) return false;
-        const { type, signs, ...order } = (await body.json()) as Order;
+        const {type, signs, ...order} = (await body.json()) as Order;
 
         // If the returned type is either external or internal
         if (Object.values(OrderType).includes(type)) {
