@@ -1091,10 +1091,10 @@
     rxjs "7.4.0"
     web3-utils "1.6.0"
 
-"@keep3r-network/keeper-scripting-utils@0.0.0-2a18fa83":
-  version "0.0.0-2a18fa83"
-  resolved "https://registry.yarnpkg.com/@keep3r-network/keeper-scripting-utils/-/keeper-scripting-utils-0.0.0-2a18fa83.tgz#183f542f2494c5db771e6c826c042fd2bebfdf9e"
-  integrity sha512-JgbcATjC2+tdjGdqkga/E0EEeaw562lU2HUW2GAmN4R7GHgd4v2NgBeucWK8R41rc46jDShinPAakncJ7tSCSg==
+"@keep3r-network/keeper-scripting-utils@0.0.0-d9b60cef":
+  version "0.0.0-d9b60cef"
+  resolved "https://registry.yarnpkg.com/@keep3r-network/keeper-scripting-utils/-/keeper-scripting-utils-0.0.0-d9b60cef.tgz#d9462db33c94fb1995a452a1c0900e67d39c65ab"
+  integrity sha512-omO6A3AkuIRk6bG1Tj+zqF8XHCyUxbbaFBMQ38vOROjmqJPSc5LeauPSv8jKPUGZ6vbwR9UhhajXMzMrIdC4EA==
   dependencies:
     "@flashbots/ethers-provider-bundle" "0.5.0"
     "@keep3r-network/cli-utils" "1.0.0"

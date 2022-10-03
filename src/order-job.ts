@@ -36,12 +36,14 @@ const job = getMainnetSdk(txSigner).orderJob;
 		                   MAIN SCRIPT
 /*============================================================== */
 
-export function run(flashbots: Flashbots): void {
-  // Flag to track if there's a transaction in progress. If this is true, then we won't execute the main logic.
+export async function run(): Promise<void> {
+  const flashbots = await Flashbots.init(txSigner, bundleSigner, provider, [FLASHBOTS_RPC], true, CHAIN_ID);
+
+  // Flag to track if there's a transaction in progress. If this is true, then we won't execute the main logic
   let txInProgress: boolean;
 
-  // Create a subscription and start listening to upcoming blocks.
-  const sub = blockListener.stream().subscribe(async (block) => {
+  // Create a subscription and start listening to upcoming blocks
+  blockListener.stream(async (block) => {
     // If the job is workable, and a new block comes, check if there's already a transaction in progress. Return if there is one.
     // We do this to avoid sending multiple transactions that try to work the same job.
     if (txInProgress) {
@@ -104,14 +106,14 @@ export function run(flashbots: Flashbots): void {
     txInProgress = true;
 
     /*
-				We are going to send this through Flashbots, which means we will be sending multiple bundles to different
-				blocks inside a batch. Here we are calculating which will be the last block we will be sending the
-				last bundle of our first batch to. This information is needed to calculate what will the maximum possible base
-				fee be in that block, so we can calculate the maxFeePerGas parameter for all our transactions.
-				For example: we are in block 100 and we send to 100, 101, 102. We would like to know what is the maximum possible
-				base fee at block 102 to make sure we don't populate our transactions with a very low maxFeePerGas, as this would
-				cause our transaction to not be mined until the max base fee lowers.
-			*/
+      We are going to send this through Flashbots, which means we will be sending multiple bundles to different
+      blocks inside a batch. Here we are calculating which will be the last block we will be sending the
+      last bundle of our first batch to. This information is needed to calculate what will the maximum possible base
+      fee be in that block, so we can calculate the maxFeePerGas parameter for all our transactions.
+      For example: we are in block 100 and we send to 100, 101, 102. We would like to know what is the maximum possible
+      base fee at block 102 to make sure we don't populate our transactions with a very low maxFeePerGas, as this would
+      cause our transaction to not be mined until the max base fee lowers.
+    */
     const blocksAhead = FUTURE_BLOCKS + BURST_SIZE;
 
     // Get the signer's (keeper) current nonce.
@@ -191,20 +193,11 @@ export function run(flashbots: Flashbots): void {
 
     if (result) console.log('=== Work transaction included successfully ===');
 
-    // If us or another keeper worked the job, that means we should wait and send a new transaction so we set txInProgress to false.
+    // If us or another keeper worked the job, that means we should wait and send a new transaction so we set txInProgress to false
     txInProgress = false;
-    // We remove our listener.
-    blockListener.stop();
-    // We unsubscribe from our Observable.
-    sub.unsubscribe();
-    // We call our main function recursively so that it tries to work the job until it is workable.
-    run(flashbots);
   });
 }
 
 (async () => {
-  // Run only once
-  const flashbots = await Flashbots.init(txSigner, bundleSigner, provider, [FLASHBOTS_RPC], true, CHAIN_ID);
-
-  run(flashbots);
+  await run();
 })();

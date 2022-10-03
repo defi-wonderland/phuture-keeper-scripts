@@ -18,6 +18,7 @@
   ],
   "private": true,
   "scripts": {
+    "postinstall": "eth-sdk",
     "start:order": "ts-node src/order-job.ts",
     "start:deposit-manager": "ts-node src/deposit-manager-job.ts",
     "build": "eth-sdk && tsc",
@@ -30,7 +31,7 @@
     "*.ts": "yarn lint"
   },
   "dependencies": {
-    "@keep3r-network/keeper-scripting-utils": "0.0.0-2a18fa83",
+    "@keep3r-network/keeper-scripting-utils": "0.0.0-d9b60cef",
     "dotenv": "16.0.3",
     "ethers": "5.6.9",
     "lodash.isequal": "4.5.0",
@@ -51,6 +52,7 @@
     "rules": {
       "unicorn/prefer-module": 0,
       "import/extensions": 0,
+      "@typescript-eslint/no-unsafe-assignment": 0,
       "@typescript-eslint/naming-convention": [
         "error",
         {
