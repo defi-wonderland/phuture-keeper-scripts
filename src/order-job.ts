@@ -13,10 +13,10 @@ import {
 } from '@keep3r-network/keeper-scripting-utils';
 import {request} from 'undici';
 import dotenv from 'dotenv';
-import {OrderType} from '../utils/types';
-import type {ExternalOrder, InternalOrder, Order} from '../utils/types';
-import {getEnvVariable} from '../utils/misc';
-import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE} from '../utils/contants';
+import {OrderType} from './utils/types';
+import type {ExternalOrder, InternalOrder, Order} from './utils/types';
+import {getEnvVariable} from './utils/misc';
+import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE} from './utils/contants';
 
 dotenv.config();
 

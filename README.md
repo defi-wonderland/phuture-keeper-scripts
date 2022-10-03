@@ -38,8 +38,8 @@ This repository enables keepers of the Keep3r Network to execute Phuture's jobs 
 2. Run the job directly from javascript (using [PM2](https://github.com/Unitech/pm2) is highly recommended)
 
 ```
-  node dist/mainnet-jobs/order-job.js
-  node dist/mainnet-jobs/deposit-manager-job.js
+  node dist/order-job.js
+  node dist/deposit-manager-job.js
 ```
 
 ## Keeper Requirements

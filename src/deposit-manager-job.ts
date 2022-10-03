@@ -11,8 +11,8 @@ import {
   BlockListener,
 } from '@keep3r-network/keeper-scripting-utils';
 import dotenv from 'dotenv';
-import {getEnvVariable} from '../utils/misc';
-import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE} from '../utils/contants';
+import {getEnvVariable} from './utils/misc';
+import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE} from './utils/contants';
 
 dotenv.config();
 
