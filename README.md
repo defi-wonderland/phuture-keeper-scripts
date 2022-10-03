@@ -23,8 +23,8 @@ This repository enables keepers of the Keep3r Network to execute Phuture's jobs 
 5. Try out the scripts
 
 ```
-  yarn start-order
-  yarn start-deposit-manager
+  yarn start:order
+  yarn start:deposit-manager
 ```
 
 ## Run in production
