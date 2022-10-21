@@ -116,85 +116,89 @@ export async function run(): Promise<void> {
     */
     const blocksAhead = FUTURE_BLOCKS + BURST_SIZE;
 
-    // Get the signer's (keeper) current nonce.
-    const currentNonce = await provider.getTransactionCount(txSigner.address);
+    try {
+      // Get the signer's (keeper) current nonce.
+      const currentNonce = await provider.getTransactionCount(txSigner.address);
 
-    // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
-    // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
-    //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-    const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
-      block,
-      blocksAhead,
-      priorityFeeInWei: PRIORITY_FEE,
-    });
+      // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
+      // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
+      //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
+      const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
+        block,
+        blocksAhead,
+        priorityFeeInWei: PRIORITY_FEE,
+      });
 
-    // We declare what options we would like our transaction to have
-    const options = {
-      gasLimit: 10_000_000,
-      nonce: currentNonce,
-      maxFeePerGas,
-      maxPriorityFeePerGas: priorityFeeInGwei,
-      type: 2,
-    };
+      // We declare what options we would like our transaction to have
+      const options = {
+        gasLimit: 10_000_000,
+        nonce: currentNonce,
+        maxFeePerGas,
+        maxPriorityFeePerGas: priorityFeeInGwei,
+        type: 2,
+      };
 
-    // We populate the transactions we will use in our bundles
-    const txs: TransactionRequest[] = await populateTransactions({
-      chainId: CHAIN_ID,
-      contract: job as Contract,
-      functionArgs: [[signs, orderParameter]],
-      functionName: functionToCall,
-      options,
-    });
+      // We populate the transactions we will use in our bundles
+      const txs: TransactionRequest[] = await populateTransactions({
+        chainId: CHAIN_ID,
+        contract: job as Contract,
+        functionArgs: [[signs, orderParameter]],
+        functionName: functionToCall,
+        options,
+      });
 
-    // We calculate the first block that the first bundle in our batch will target.
-    // Example, if future blocks is 2, and we are in block 100, it will send a bundle to blocks 102, 103, 104 (assuming a burst size of 3)
-    // and 102 would be the firstBlockOfBatch
-    const firstBlockOfBatch = block.number + FUTURE_BLOCKS;
+      // We calculate the first block that the first bundle in our batch will target.
+      // Example, if future blocks is 2, and we are in block 100, it will send a bundle to blocks 102, 103, 104 (assuming a burst size of 3)
+      // and 102 would be the firstBlockOfBatch
+      const firstBlockOfBatch = block.number + FUTURE_BLOCKS;
 
-    // We create our batch of bundles. In this case we use createBundlesWithSameTxs, as all bundles use the same transaction
-    const bundles = createBundlesWithSameTxs({
-      unsignedTxs: txs,
-      burstSize: BURST_SIZE,
-      firstBlockOfBatch,
-    });
+      // We create our batch of bundles. In this case we use createBundlesWithSameTxs, as all bundles use the same transaction
+      const bundles = createBundlesWithSameTxs({
+        unsignedTxs: txs,
+        burstSize: BURST_SIZE,
+        firstBlockOfBatch,
+      });
 
-    // We send our bundles to Flashbots and retry until the job is worked by us or another keeper.
-    const result = await sendAndRetryUntilNotWorkable({
-      txs,
-      provider,
-      priorityFeeInWei: PRIORITY_FEE,
-      bundles,
-      newBurstSize: BURST_SIZE,
-      flashbots,
-      signer: txSigner,
-      async isWorkableCheck() {
-        // This job does not have a workable check. But we can check that the order we should call has not been called
-        // by doing a call to their API. If the status is not 200, it means that the order is not available anymore.
-        // If the status is 200, but a different order from the one we populated the first time we fetched the API is
-        // returned, then we need to return and recompute our transaction to work that new order.
-        const {statusCode, body} = await request(ORDER_API_URL);
-        if (statusCode !== 200) return false;
-        const {type, signs, ...order} = (await body.json()) as Order;
+      // We send our bundles to Flashbots and retry until the job is worked by us or another keeper.
+      const result = await sendAndRetryUntilNotWorkable({
+        txs,
+        provider,
+        priorityFeeInWei: PRIORITY_FEE,
+        bundles,
+        newBurstSize: BURST_SIZE,
+        flashbots,
+        signer: txSigner,
+        async isWorkableCheck() {
+          // This job does not have a workable check. But we can check that the order we should call has not been called
+          // by doing a call to their API. If the status is not 200, it means that the order is not available anymore.
+          // If the status is 200, but a different order from the one we populated the first time we fetched the API is
+          // returned, then we need to return and recompute our transaction to work that new order.
+          const {statusCode, body} = await request(ORDER_API_URL);
+          if (statusCode !== 200) return false;
+          const {type, signs, ...order} = (await body.json()) as Order;
 
-        // If the returned type is either external or internal
-        if (Object.values(OrderType).includes(type)) {
-          const parameter = (order as ExternalOrder).external || (order as InternalOrder).internal;
-          // We verify that the work needed is still the same as the one requested initially
-          if (functionToCall === `${type}Swap` && isEqual(parameter, orderParameter)) return true;
-          // In case not, restart the script
-          console.log('The order differs from the one in our transaction. Restarting the script.');
+          // If the returned type is either external or internal
+          if (Object.values(OrderType).includes(type)) {
+            const parameter = (order as ExternalOrder).external || (order as InternalOrder).internal;
+            // We verify that the work needed is still the same as the one requested initially
+            if (functionToCall === `${type}Swap` && isEqual(parameter, orderParameter)) return true;
+            // In case not, restart the script
+            console.log('The order differs from the one in our transaction. Restarting the script.');
+            return false;
+          }
+
+          console.error(`Unexpected order type received. Restarting the script.`);
           return false;
-        }
+        },
+      });
 
-        console.error(`Unexpected order type received. Restarting the script.`);
-        return false;
-      },
-    });
-
-    if (result) console.log('=== Work transaction included successfully ===');
-
-    // If us or another keeper worked the job, that means we should wait and send a new transaction so we set txInProgress to false
-    txInProgress = false;
+      if (result) console.log('=== Work transaction included successfully ===');
+    } catch (error: unknown) {
+      console.error(error);
+    } finally {
+      // If us or another keeper worked the job, that means we should wait and send a new transaction so we set txInProgress to false
+      txInProgress = false;
+    }
   });
 }
 
