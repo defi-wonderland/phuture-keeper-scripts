@@ -77,7 +77,8 @@ export async function run(): Promise<void> {
     }
 
     // If we get 200 as the status code, we parse the body of the response
-    const {type, signs, ...order} = (await body.json()) as Order;
+    const {data} = await body.json();
+    const {type, signs, ...order} = data[0] as Order;
 
     // Define variables whose values will depend on whether we need to send a external or internal order
     let functionToCall: 'externalSwap' | 'internalSwap';
@@ -175,7 +176,8 @@ export async function run(): Promise<void> {
           // returned, then we need to return and recompute our transaction to work that new order.
           const {statusCode, body} = await request(ORDER_API_URL);
           if (statusCode !== 200) return false;
-          const {type, signs, ...order} = (await body.json()) as Order;
+          const {data} = await body.json();
+          const {type, signs, ...order} = data[0] as Order;
 
           // If the returned type is either external or internal
           if (Object.values(OrderType).includes(type)) {
