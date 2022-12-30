@@ -1,21 +1,17 @@
 import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
 import type { TransactionRequest } from '@ethersproject/abstract-provider';
-import type { Contract } from 'ethers';
-import isEqual from 'lodash.isequal';
 import {
-  createBundlesWithSameTxs,
-  getMainnetGasType2Parameters,
-  sendAndRetryUntilNotWorkable,
-  populateTransactions,
-  Flashbots,
   BlockListener,
+  createBundlesWithSameTxs,
+  Flashbots,
+  getMainnetGasType2Parameters,
+  populateTransactions,
+  sendAndRetryUntilNotWorkable,
 } from '@keep3r-network/keeper-scripting-utils';
-import { request } from 'undici';
 import dotenv from 'dotenv';
+import type { Contract } from 'ethers';
 import { loadInitialSetup } from './shared/setup';
-import { OrderType } from './utils/types';
-import type { ExternalOrder, InternalOrder, Order } from './utils/types';
-import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE } from './utils/contants';
+import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE, USV_ADDRESS } from './utils/contants';
 
 dotenv.config();
 
@@ -27,7 +23,7 @@ dotenv.config();
 const { provider, txSigner, bundleSigner } = loadInitialSetup();
 
 const blockListener = new BlockListener(provider);
-const job = getMainnetSdk(txSigner).orderJob;
+const job = getMainnetSdk(txSigner).harvestingJob;
 
 /* ==============================================================/*
 		                   MAIN SCRIPT
@@ -48,7 +44,7 @@ export async function run(): Promise<void> {
       return;
     }
 
-    // Check if the job is paused
+    // Check if job is paused
     const paused = await job.paused();
 
     // If it's paused, then return
@@ -57,48 +53,7 @@ export async function run(): Promise<void> {
       return;
     }
 
-    // Call the API to see if there's an order that needs to be executed
-    const { statusCode, body } = await request(ORDER_API_URL);
-
-    // Emit the logs according to the status code the API gave us. If the status code is not 200, return.
-    switch (statusCode) {
-      case 200:
-        console.debug(`Got 200 OK from Validator.`);
-        break;
-      case 404:
-        console.debug(`Error 404: There are no orders currently. Retrying in next block.`);
-        return;
-      default:
-        console.debug(`Expected to get 200 OK from Validator but instead got ${statusCode}.`);
-        return;
-    }
-
-    // If we get 200 as the status code, we parse the body of the response
-    const { data } = await body.json();
-    const { type, signs, ...order } = data[0] as Order;
-
-    // Define variables whose values will depend on whether we need to send a external or internal order
-    let functionToCall: 'externalSwap' | 'internalSwap';
-    let orderParameter: Omit<Order, 'type' | 'signs'>;
-
-    // Set functionToCall and orderType values according to whether the order to send is external or internal. If it's none, return.
-    switch (type) {
-      case OrderType.External: {
-        functionToCall = 'externalSwap';
-        orderParameter = (order as ExternalOrder).external;
-        break;
-      }
-
-      case OrderType.Internal: {
-        functionToCall = 'internalSwap';
-        orderParameter = (order as InternalOrder).internal;
-        break;
-      }
-
-      default:
-        console.error(`Unexpected order type received`);
-        return;
-    }
+    console.log('Job is not paused.');
 
     // If we arrived here, it means we will be sending a transaction, so we optimistically set this to true.
     txInProgress = true;
@@ -111,7 +66,7 @@ export async function run(): Promise<void> {
       For example: we are in block 100 and we send to 100, 101, 102. We would like to know what is the maximum possible
       base fee at block 102 to make sure we don't populate our transactions with a very low maxFeePerGas, as this would
       cause our transaction to not be mined until the max base fee lowers.
-    */
+	  */
     const blocksAhead = FUTURE_BLOCKS + BURST_SIZE;
 
     try {
@@ -137,13 +92,31 @@ export async function run(): Promise<void> {
       };
 
       // We populate the transactions we will use in our bundles
-      const txs: TransactionRequest[] = await populateTransactions({
-        chainId: CHAIN_ID,
-        contract: job as Contract,
-        functionArgs: [[signs, orderParameter]],
-        functionName: functionToCall,
-        options,
-      });
+      let txs: TransactionRequest[];
+
+      // Check if account settlement is required
+      const isAccountSettlementRequired = await job.isAccountSettlementRequired(USV_ADDRESS);
+
+      // If it is, then we will send a transaction to the job to settle the account
+      if (isAccountSettlementRequired) {
+        console.info('Account settlement is required!');
+        txs = await populateTransactions({
+          chainId: CHAIN_ID,
+          contract: job as Contract,
+          functionArgs: [[USV_ADDRESS]],
+          functionName: 'settleAccount',
+          options,
+        });
+      } else {
+        // If it's not, then we will send a transaction to the job to harvest
+        txs = await populateTransactions({
+          chainId: CHAIN_ID,
+          contract: job as Contract,
+          functionArgs: [[USV_ADDRESS]],
+          functionName: 'harvest',
+          options,
+        });
+      }
 
       // We calculate the first block that the first bundle in our batch will target.
       // Example, if future blocks is 2, and we are in block 100, it will send a bundle to blocks 102, 103, 104 (assuming a burst size of 3)
@@ -166,29 +139,27 @@ export async function run(): Promise<void> {
         newBurstSize: BURST_SIZE,
         flashbots,
         signer: txSigner,
-        async isWorkableCheck() {
-          // This job does not have a workable check. But we can check that the order we should call has not been called
-          // by doing a call to their API. If the status is not 200, it means that the order is not available anymore.
-          // If the status is 200, but a different order from the one we populated the first time we fetched the API is
-          // returned, then we need to return and recompute our transaction to work that new order.
-          const { statusCode, body } = await request(ORDER_API_URL);
-          if (statusCode !== 200) return false;
-          const { data } = await body.json();
-          const { type, signs, ...order } = data[0] as Order;
+        isWorkableCheck: isAccountSettlementRequired
+          ? async (): Promise<boolean> => {
+              try {
+                await job.callStatic.settleAccount(USV_ADDRESS);
+              } catch (e) {
+                console.info('Account settlement is not required anymore or could not be done at this time.');
+                return false;
+              }
 
-          // If the returned type is either external or internal
-          if (Object.values(OrderType).includes(type)) {
-            const parameter = (order as ExternalOrder).external || (order as InternalOrder).internal;
-            // We verify that the work needed is still the same as the one requested initially
-            if (functionToCall === `${type}Swap` && isEqual(parameter, orderParameter)) return true;
-            // In case not, restart the script
-            console.log('The order differs from the one in our transaction. Restarting the script.');
-            return false;
-          }
+              return true;
+            }
+          : async (): Promise<boolean> => {
+              try {
+                await job.callStatic.harvest(USV_ADDRESS);
+              } catch (e) {
+                console.info('Harvesting is not available or could not be done at this time.');
+                return false;
+              }
 
-          console.error(`Unexpected order type received. Restarting the script.`);
-          return false;
-        },
+              return true;
+            },
       });
 
       if (result) console.log('=== Work transaction included successfully ===');

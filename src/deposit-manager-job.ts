@@ -1,18 +1,17 @@
-import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
-import type {TransactionRequest} from '@ethersproject/abstract-provider';
-import type {Contract} from 'ethers';
-import {providers, Wallet} from 'ethers';
+import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+import type { TransactionRequest } from '@ethersproject/abstract-provider';
 import {
-  createBundlesWithSameTxs,
-  getMainnetGasType2Parameters,
-  sendAndRetryUntilNotWorkable,
-  populateTransactions,
-  Flashbots,
   BlockListener,
+  createBundlesWithSameTxs,
+  Flashbots,
+  getMainnetGasType2Parameters,
+  populateTransactions,
+  sendAndRetryUntilNotWorkable,
 } from '@keep3r-network/keeper-scripting-utils';
 import dotenv from 'dotenv';
-import {getEnvVariable} from './utils/misc';
-import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE} from './utils/contants';
+import type { Contract } from 'ethers';
+import { loadInitialSetup } from './shared/setup';
+import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE } from './utils/contants';
 
 dotenv.config();
 
@@ -20,10 +19,8 @@ dotenv.config();
 		                      SETUP
 /*============================================================== */
 
-// environment variables usage
-const provider = new providers.WebSocketProvider(getEnvVariable('RPC_WSS_URI'));
-const txSigner = new Wallet(getEnvVariable('TX_SIGNER_PRIVATE_KEY'), provider);
-const bundleSigner = new Wallet(getEnvVariable('BUNDLE_SIGNER_PRIVATE_KEY'), provider);
+// pull environment variables
+const { provider, txSigner, bundleSigner } = loadInitialSetup();
 
 const blockListener = new BlockListener(provider);
 const job = getMainnetSdk(txSigner).depositManagerJob;
@@ -78,7 +75,7 @@ export async function run(): Promise<void> {
       // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
       // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
       //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-      const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
+      const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
         block,
         blocksAhead,
         priorityFeeInWei: PRIORITY_FEE,

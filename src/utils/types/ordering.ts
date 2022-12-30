@@ -1,4 +1,4 @@
-import type {BigNumberish, BytesLike} from 'ethers';
+import type { BigNumberish, BytesLike } from 'ethers';
 
 type Address = string;
 
