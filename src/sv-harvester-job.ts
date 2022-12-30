@@ -10,9 +10,8 @@ import {
 } from '@keep3r-network/keeper-scripting-utils';
 import dotenv from 'dotenv';
 import type { Contract } from 'ethers';
-import { providers, Wallet } from 'ethers';
-import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE } from './utils/contants';
-import { getEnvVariable } from './utils/misc';
+import { loadInitialSetup } from './shared/setup';
+import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE, USV_ADDRESS } from './utils/contants';
 
 dotenv.config();
 
@@ -20,14 +19,11 @@ dotenv.config();
 		                      SETUP
 /*============================================================== */
 
-// environment variables usage
-const provider = new providers.WebSocketProvider(getEnvVariable('RPC_WSS_URI'));
-const txSigner = new Wallet(getEnvVariable('TX_SIGNER_PRIVATE_KEY'), provider);
-const bundleSigner = new Wallet(getEnvVariable('BUNDLE_SIGNER_PRIVATE_KEY'), provider);
+// pull environment variables
+const { provider, txSigner, bundleSigner } = loadInitialSetup();
 
 const blockListener = new BlockListener(provider);
 const job = getMainnetSdk(txSigner).harvestingJob;
-const vault = getMainnetSdk(txSigner).usdcSavingsVault;
 
 /* ==============================================================/*
 		                   MAIN SCRIPT
@@ -99,7 +95,7 @@ export async function run(): Promise<void> {
       let txs: TransactionRequest[];
 
       // Check if account settlement is required
-      const isAccountSettlementRequired = await job.isAccountSettlementRequired(vault.address);
+      const isAccountSettlementRequired = await job.isAccountSettlementRequired(USV_ADDRESS);
 
       // If it is, then we will send a transaction to the job to settle the account
       if (isAccountSettlementRequired) {
@@ -107,7 +103,7 @@ export async function run(): Promise<void> {
         txs = await populateTransactions({
           chainId: CHAIN_ID,
           contract: job as Contract,
-          functionArgs: [[vault.address]],
+          functionArgs: [[USV_ADDRESS]],
           functionName: 'settleAccount',
           options,
         });
@@ -116,7 +112,7 @@ export async function run(): Promise<void> {
         txs = await populateTransactions({
           chainId: CHAIN_ID,
           contract: job as Contract,
-          functionArgs: [[vault.address]],
+          functionArgs: [[USV_ADDRESS]],
           functionName: 'harvest',
           options,
         });
@@ -143,16 +139,27 @@ export async function run(): Promise<void> {
         newBurstSize: BURST_SIZE,
         flashbots,
         signer: txSigner,
-        async isWorkableCheck(): Promise<boolean> {
-          // Provide the function with a function to re-check whether the deposits can still be updated
-          // after a batch of bundles fails to be included
-          const canUpdate = await job.canHarvest(vault.address);
-          if (!canUpdate) {
-            console.log('Harvesting is not available at this time. Restarting the script...');
-          }
+        isWorkableCheck: isAccountSettlementRequired
+          ? async (): Promise<boolean> => {
+              try {
+                await job.callStatic.settleAccount(USV_ADDRESS);
+              } catch (e) {
+                console.info('Account settlement is not required anymore or could not be done at this time.');
+                return false;
+              }
 
-          return canUpdate;
-        },
+              return true;
+            }
+          : async (): Promise<boolean> => {
+              try {
+                await job.callStatic.harvest(USV_ADDRESS);
+              } catch (e) {
+                console.info('Harvesting is not available or could not be done at this time.');
+                return false;
+              }
+
+              return true;
+            },
       });
 
       if (result) console.log('=== Work transaction included successfully ===');
