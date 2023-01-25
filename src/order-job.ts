@@ -13,8 +13,7 @@ import {
 import { request } from 'undici';
 import dotenv from 'dotenv';
 import { loadInitialSetup } from './shared/setup';
-import { OrderType } from './utils/types';
-import type { ExternalOrder, InternalOrder, Order } from './utils/types';
+import type { Order } from './utils/types';
 import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE } from './utils/contants';
 
 dotenv.config();
@@ -75,30 +74,10 @@ export async function run(): Promise<void> {
 
     // If we get 200 as the status code, we parse the body of the response
     const { data } = await body.json();
-    const { type, signs, ...order } = data[0] as Order;
+    const { type, signs, external } = data[0] as Order;
 
     // Define variables whose values will depend on whether we need to send a external or internal order
-    let functionToCall: 'externalSwap' | 'internalSwap';
-    let orderParameter: Omit<Order, 'type' | 'signs'>;
-
-    // Set functionToCall and orderType values according to whether the order to send is external or internal. If it's none, return.
-    switch (type) {
-      case OrderType.External: {
-        functionToCall = 'externalSwap';
-        orderParameter = (order as ExternalOrder).external;
-        break;
-      }
-
-      case OrderType.Internal: {
-        functionToCall = 'internalSwap';
-        orderParameter = (order as InternalOrder).internal;
-        break;
-      }
-
-      default:
-        console.error(`Unexpected order type received`);
-        return;
-    }
+    const functionToCall = 'externalSwap';
 
     // If we arrived here, it means we will be sending a transaction, so we optimistically set this to true.
     txInProgress = true;
@@ -140,7 +119,7 @@ export async function run(): Promise<void> {
       const txs: TransactionRequest[] = await populateTransactions({
         chainId: CHAIN_ID,
         contract: job as Contract,
-        functionArgs: [[signs, orderParameter]],
+        functionArgs: [[signs, external]],
         functionName: functionToCall,
         options,
       });
@@ -177,10 +156,10 @@ export async function run(): Promise<void> {
           const { type, signs, ...order } = data[0] as Order;
 
           // If the returned type is either external or internal
-          if (Object.values(OrderType).includes(type)) {
-            const parameter = (order as ExternalOrder).external || (order as InternalOrder).internal;
+          if (type === "external") {
+            const parameter = (order as Order).external;
             // We verify that the work needed is still the same as the one requested initially
-            if (functionToCall === `${type}Swap` && isEqual(parameter, orderParameter)) return true;
+            if (isEqual({...parameter, swapData: null }, {...external, swapData: null})) return true;
             // In case not, restart the script
             console.log('The order differs from the one in our transaction. Restarting the script.');
             return false;
