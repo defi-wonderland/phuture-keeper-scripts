@@ -1,5 +1,8 @@
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+import { createLoggingContext, getChainData, NxtpError, RequestContext, RootManagerMeta } from '@connext/nxtp-utils';
+import { BigNumber, constants, Contract } from 'ethers';
 import type { TransactionRequest } from '@ethersproject/abstract-provider';
+import { SubgraphReader } from '@connext/nxtp-adapters-subgraph';
+import dotenv from 'dotenv';
 import {
   BlockListener,
   createBundlesWithSameTxs,
@@ -7,13 +10,24 @@ import {
   getMainnetGasType2Parameters,
   populateTransactions,
   sendAndRetryUntilNotWorkable,
+  sendTx,
 } from '@keep3r-network/keeper-scripting-utils';
-import dotenv from 'dotenv';
-import type { Contract } from 'ethers';
+import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+
+import {
+  getPropagateParamsArbitrum,
+  getPropagateParamsBnb,
+  getPropagateParamsConsensys,
+  getPropagateParamsGnosis,
+  getPropagateParamsZkSync,
+} from '../helpers';
 import { loadInitialSetup } from './shared/setup';
-import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE } from './utils/contants';
+import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC } from './utils/contants';
 
 dotenv.config();
+
+// Priority fee to use
+const PRIORITY_FEE = 2;
 
 /* ==============================================================/*
 		                      SETUP
@@ -23,7 +37,28 @@ dotenv.config();
 const { provider, txSigner, bundleSigner } = loadInitialSetup();
 
 const blockListener = new BlockListener(provider);
-const job = getMainnetSdk(txSigner).depositManagerJob;
+
+const job = getMainnetSdk(txSigner).relayerProxyHub;
+
+export type ExtraPropagateParam = {
+  _connector: string;
+  _fee: string;
+  _encodedData: string;
+};
+
+export const getParamsForDomainFn: Record<
+  string,
+  (spokeDomain: string, spokeChainId: number, hubChainId: number) => Promise<ExtraPropagateParam>
+> = {
+  // mainnet
+  '1634886255': getPropagateParamsArbitrum,
+  '6450786': getPropagateParamsBnb,
+  '6778479': getPropagateParamsGnosis,
+  // testnet
+  '1734439522': getPropagateParamsArbitrum,
+  '1668247156': getPropagateParamsConsensys,
+  '2053862260': getPropagateParamsZkSync,
+};
 
 /* ==============================================================/*
 		                   MAIN SCRIPT
@@ -31,9 +66,13 @@ const job = getMainnetSdk(txSigner).depositManagerJob;
 
 export async function run(): Promise<void> {
   const flashbots = await Flashbots.init(txSigner, bundleSigner, provider, [FLASHBOTS_RPC], true, CHAIN_ID);
-
   // Flag to track if there's a transaction in progress. If this is true, then we won't execute the main logic
   let txInProgress: boolean;
+
+  const chainData = await getChainData();
+  const subgraph = await SubgraphReader.create(chainData, 'production');
+  const rootManagerMeta: RootManagerMeta = await subgraph.getRootManagerMeta('6648936');
+  const domains = rootManagerMeta.domains;
 
   // Create a subscription and start listening to upcoming blocks
   blockListener.stream(async (block) => {
@@ -44,30 +83,6 @@ export async function run(): Promise<void> {
       return;
     }
 
-    // Check if job is workable
-    const canUpdate = await job.canUpdateDeposits();
-
-    if (!canUpdate) {
-      console.log('Deposits are not updateable at this time. Retrying in next block.');
-      return;
-    }
-
-    console.log('Deposits are updateable.');
-
-    // If we arrived here, it means we will be sending a transaction, so we optimistically set this to true.
-    txInProgress = true;
-
-    /*
-      We are going to send this through Flashbots, which means we will be sending multiple bundles to different
-      blocks inside a batch. Here we are calculating which will be the last block we will be sending the
-      last bundle of our first batch to. This information is needed to calculate what will the maximum possible base
-      fee be in that block, so we can calculate the maxFeePerGas parameter for all our transactions.
-      For example: we are in block 100 and we send to 100, 101, 102. We would like to know what is the maximum possible
-      base fee at block 102 to make sure we don't populate our transactions with a very low maxFeePerGas, as this would
-      cause our transaction to not be mined until the max base fee lowers.
-	  */
-    const blocksAhead = FUTURE_BLOCKS + BURST_SIZE;
-
     try {
       // Get the signer's (keeper) current nonce.
       const currentNonce = await provider.getTransactionCount(txSigner.address);
@@ -77,7 +92,7 @@ export async function run(): Promise<void> {
       //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
       const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
         block,
-        blocksAhead,
+        blocksAhead: 0,
         priorityFeeInWei: PRIORITY_FEE,
       });
 
@@ -90,19 +105,40 @@ export async function run(): Promise<void> {
         type: 2,
       };
 
-      // We populate the transactions we will use in our bundles
+      const _connectors: string[] = [];
+      const _encodedData: string[] = [];
+      const _fees: string[] = [];
+      let _totalFee = constants.Zero;
+
+      for (const domain of domains) {
+        const connector = rootManagerMeta.connectors[domains.indexOf(domain)];
+        _connectors.push(connector);
+
+        if (Object.keys(getParamsForDomainFn).includes(domain)) {
+          const getParamsForDomain = getParamsForDomainFn[domain];
+          const propagateParam = await getParamsForDomain(domain, chainData.get(domain)!.chainId, CHAIN_ID);
+          _encodedData.push(propagateParam._encodedData);
+          _fees.push(propagateParam._fee);
+          _totalFee = _totalFee.add(BigNumber.from(propagateParam._fee));
+        } else {
+          _encodedData.push('0x');
+          _fees.push('0');
+        }
+      }
+
+      // encode data for relayer proxy hub
+      const fee = BigNumber.from(0);
+
+      // We populate the transactions we will use
       const txs: TransactionRequest[] = await populateTransactions({
         chainId: CHAIN_ID,
         contract: job as Contract,
-        functionArgs: [[]],
-        functionName: 'updateDeposits',
+        functionArgs: [[_connectors, _fees, _encodedData, fee]],
+        functionName: 'propagate',
         options,
       });
 
-      // We calculate the first block that the first bundle in our batch will target.
-      // Example, if future blocks is 2, and we are in block 100, it will send a bundle to blocks 102, 103, 104 (assuming a burst size of 3)
-      // and 102 would be the firstBlockOfBatch
-      const firstBlockOfBatch = block.number + FUTURE_BLOCKS;
+      const firstBlockOfBatch = block.number;
 
       // We create our batch of bundles. In this case we use createBundlesWithSameTxs, as all bundles use the same transaction
       const bundles = createBundlesWithSameTxs({
@@ -138,7 +174,3 @@ export async function run(): Promise<void> {
     }
   });
 }
-
-(async () => {
-  await run();
-})();
