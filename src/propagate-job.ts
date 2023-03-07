@@ -1,5 +1,5 @@
-import { createLoggingContext, getChainData, NxtpError, RequestContext, RootManagerMeta } from '@connext/nxtp-utils';
-import { BigNumber, constants, Contract } from 'ethers';
+import { getChainData, RootManagerMeta } from '@connext/nxtp-utils';
+import { BigNumber, constants } from 'ethers';
 import type { TransactionRequest } from '@ethersproject/abstract-provider';
 import { SubgraphReader } from '@connext/nxtp-adapters-subgraph';
 import dotenv from 'dotenv';
@@ -10,19 +10,13 @@ import {
   getMainnetGasType2Parameters,
   populateTransactions,
   sendAndRetryUntilNotWorkable,
-  sendTx,
 } from '@keep3r-network/keeper-scripting-utils';
 import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
 
-import {
-  getPropagateParamsArbitrum,
-  getPropagateParamsBnb,
-  getPropagateParamsConsensys,
-  getPropagateParamsGnosis,
-  getPropagateParamsZkSync,
-} from '../helpers';
 import { loadInitialSetup } from './shared/setup';
 import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC } from './utils/contants';
+import { getPropagateParamsArbitrum, getPropagateParamsBnb, getPropagateParamsGnosis } from './helpers/propagate';
+import { InitialSetup } from './utils/types';
 
 dotenv.config();
 
@@ -34,11 +28,12 @@ const PRIORITY_FEE = 2;
 /*============================================================== */
 
 // pull environment variables
-const { provider, txSigner, bundleSigner } = loadInitialSetup();
+const setup = loadInitialSetup();
+const { provider, txSigner, bundleSigner } = setup;
 
 const blockListener = new BlockListener(provider);
 
-const job = getMainnetSdk(txSigner).relayerProxyHub;
+export const mainnetSdk = getMainnetSdk(txSigner);
 
 export type ExtraPropagateParam = {
   _connector: string;
@@ -46,18 +41,11 @@ export type ExtraPropagateParam = {
   _encodedData: string;
 };
 
-export const getParamsForDomainFn: Record<
-  string,
-  (spokeDomain: string, spokeChainId: number, hubChainId: number) => Promise<ExtraPropagateParam>
-> = {
+export const getParamsForDomainFn: Record<string, (setup: InitialSetup) => Promise<ExtraPropagateParam>> = {
   // mainnet
   '1634886255': getPropagateParamsArbitrum,
   '6450786': getPropagateParamsBnb,
   '6778479': getPropagateParamsGnosis,
-  // testnet
-  '1734439522': getPropagateParamsArbitrum,
-  '1668247156': getPropagateParamsConsensys,
-  '2053862260': getPropagateParamsZkSync,
 };
 
 /* ==============================================================/*
@@ -116,7 +104,7 @@ export async function run(): Promise<void> {
 
         if (Object.keys(getParamsForDomainFn).includes(domain)) {
           const getParamsForDomain = getParamsForDomainFn[domain];
-          const propagateParam = await getParamsForDomain(domain, chainData.get(domain)!.chainId, CHAIN_ID);
+          const propagateParam = await getParamsForDomain(setup);
           _encodedData.push(propagateParam._encodedData);
           _fees.push(propagateParam._fee);
           _totalFee = _totalFee.add(BigNumber.from(propagateParam._fee));
@@ -132,7 +120,7 @@ export async function run(): Promise<void> {
       // We populate the transactions we will use
       const txs: TransactionRequest[] = await populateTransactions({
         chainId: CHAIN_ID,
-        contract: job as Contract,
+        contract: mainnetSdk.relayerProxyHub,
         functionArgs: [[_connectors, _fees, _encodedData, fee]],
         functionName: 'propagate',
         options,
@@ -159,9 +147,7 @@ export async function run(): Promise<void> {
         async isWorkableCheck() {
           // Provide the function with a function to re-check whether the deposits can still be updated
           // after a batch of bundles fails to be included
-          const canUpdate = await job.canUpdateDeposits();
-          if (!canUpdate) console.log('Deposits are not updateable at this time. Restarting the script...');
-          return canUpdate;
+          return true;
         },
       });
 
