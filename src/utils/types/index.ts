@@ -6,3 +6,15 @@ export type InitialSetup = {
   txSigner: Wallet;
   bundleSigner: Wallet;
 };
+
+export type ExtraPropagateParam = {
+  _connector: string;
+  _fee: string;
+  _encodedData: string;
+};
+
+export type ParamsForDomains = {
+  connectors: string[];
+  encodedData: string[];
+  fees: string[];
+};
