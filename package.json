@@ -1,29 +1,23 @@
 {
-  "name": "@phuture/keeper-scripts",
+  "name": "@connext/keeper-scripts",
   "version": "0.0.1",
-  "description": "Phuture's keeper script for The Keep3r Network",
+  "description": "Connext's keeper script for The Keep3r Network",
   "keywords": [
     "keep3r",
     "job",
     "ethereum",
-    "phuture"
+    "phuture",
+    "connext"
   ],
   "license": "MIT",
-  "author": "Phuture Finance",
-  "contributors": [
-    "0xng (https://github.com/0xng)",
-    "gotzenx (https://github.com/gotzenx)",
-    "0xGorilla (https://github.com/0xGorilla)",
-    "jn-lp (https://github.com/jn-lp)"
-  ],
+  "author": "Connext",
+  "contributors": [],
   "private": true,
   "scripts": {
     "postinstall": "eth-sdk",
-    "start:order": "ts-node src/order-job.ts",
-    "start:deposit-manager": "ts-node src/deposit-manager-job.ts",
-    "build": "eth-sdk && tsc",
-    "prod:order": "node dist/src/order-job.js",
-    "prod:deposit-manager": "node dist/src/deposit-manager-job.js",
+    "start:propagate": "ts-node src/init-propagate.ts",
+    "build": "eth-sdk tsc",
+    "prod:propagate": "node dist/src/init-propagate.js",
     "lint": "xo",
     "lint:fix": "xo --fix"
   },
@@ -31,7 +25,11 @@
     "*.ts": "yarn lint"
   },
   "dependencies": {
-    "@keep3r-network/keeper-scripting-utils": "0.0.0-d9b60cef",
+    "@arbitrum/sdk": "3.0.0-beta.12",
+    "@connext/nxtp-adapters-subgraph": "^0.2.8-alpha.1",
+    "@connext/nxtp-utils": "^0.2.8-alpha.1",
+    "@eth-optimism/sdk": "^2.0.0",
+    "@keep3r-network/keeper-scripting-utils": "0.0.0-554bcc1d",
     "dotenv": "16.0.3",
     "ethers": "5.6.9",
     "lodash.isequal": "4.5.0",
@@ -44,7 +42,8 @@
     "husky": ">=6",
     "lint-staged": ">=10",
     "ts-node": "10.9.1",
-    "typescript": "4.8.4",
+    "typescript": "4.9.5",
+    "typechain": "^8.1.1",
     "xo": "0.52.3"
   },
   "xo": {
