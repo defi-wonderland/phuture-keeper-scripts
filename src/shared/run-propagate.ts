@@ -25,11 +25,10 @@ export async function runPropagate(
     const { connectors, encodedData, fees } = await populateParamsForDomains(domains, rootManagerMeta, setup);
 
     // encode data for relayer proxy hub
-    const fee = BigNumber.from(0); // 0 fee since we arent paying for the tx synchronously
 
     console.log('workMethod: ', workMethod);
     try {
-      await broadcastMethod({ jobContract, workMethod, workArguments: [connectors, encodedData, fees, fee], block });
+      await broadcastMethod({ jobContract, workMethod, workArguments: [connectors, encodedData, fees], block });
     } catch (error: unknown) {
       if (error instanceof Error) console.log(`Propagate failed with:`, error.message);
     }
