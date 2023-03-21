@@ -1,10 +1,9 @@
 import { BigNumber, constants, utils } from 'ethers';
 import { L1ToL2MessageGasEstimator } from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator';
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
-
-import { ExtraPropagateParam } from 'src/propagate-job';
 import { getArbitrumOneSdk, getMainnetSdk } from '@dethcrypto/eth-sdk-client';
-import { InitialSetup } from 'src/utils/types';
+
+import { ExtraPropagateParam, InitialSetup } from 'src/utils/types';
 
 // example at https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/greeter/scripts/exec.js
 export const getPropagateParams = async ({ txSigner, arbProvider, provider }: InitialSetup): Promise<ExtraPropagateParam> => {

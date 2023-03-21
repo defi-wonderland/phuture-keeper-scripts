@@ -6,7 +6,7 @@ import { runPropagate } from './shared/run-propagate';
 import { InitialSetup } from './utils/types';
 
 // SETUP
-const WORK_FUNCTION = 'propagate';
+const WORK_FUNCTION = 'propagateKeep3r';
 const GAS_LIMIT = 10_000_000;
 const PRIORITY_FEE = 2e9;
 
@@ -26,6 +26,7 @@ const PRIORITY_FEE = 2e9;
 
   // CONTRACTS
   const proxyHub = getMainnetSdk(txSigner).relayerProxyHub;
+  console.log('proxyHub: ', proxyHub.address);
 
   // PROVIDERS
   const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner);
