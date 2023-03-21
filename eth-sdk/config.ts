@@ -3,7 +3,7 @@ import { defineConfig } from '@dethcrypto/eth-sdk';
 export default defineConfig({
   contracts: {
     mainnet: {
-      relayerProxyHub: '0x75C6A865c30da54e365Cb5Def728890B3DD8BDC4',
+      relayerProxyHub: '0x9e4C8BC2A9Dc9295EF96c0CFE9520cc2FdED4DB0',
       arbitrumHubConnector: '0xd151C9ef49cE2d30B829a98A07767E3280F70961',
       bnbHubConnector: '0xfaf539a73659feaec96ec7242f075be0445526a8',
       gnosisHubConnector: '0x245F757d660C3ec65416168690431076d58d6413',

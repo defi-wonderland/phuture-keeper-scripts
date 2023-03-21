@@ -1,8 +1,7 @@
 import { Contract } from 'ethers';
 import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
 
-import { InitialSetup } from 'src/utils/types';
-import { ExtraPropagateParam } from 'src/propagate-job';
+import { ExtraPropagateParam, InitialSetup } from 'src/utils/types';
 
 export const getPropagateParams = async ({ txSigner, provider }: InitialSetup): Promise<ExtraPropagateParam> => {
   const mainnetSdk = getMainnetSdk(txSigner);

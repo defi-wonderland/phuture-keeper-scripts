@@ -4,8 +4,9 @@ import type { BroadcastorProps } from '@keep3r-network/keeper-scripting-utils';
 import { BlockListener } from '@keep3r-network/keeper-scripting-utils';
 import { getChainData, RootManagerMeta } from '@connext/nxtp-utils';
 import { SubgraphReader } from '@connext/nxtp-adapters-subgraph';
-import { populateParamsForDomains } from 'src/utils/propagate';
-import { InitialSetup } from 'src/utils/types';
+
+import { populateParamsForDomains } from '../utils/propagate';
+import { InitialSetup } from '../utils/types';
 
 export async function runPropagate(
   jobContract: Contract,
@@ -26,6 +27,7 @@ export async function runPropagate(
     // encode data for relayer proxy hub
     const fee = BigNumber.from(0); // 0 fee since we arent paying for the tx synchronously
 
+    console.log('workMethod: ', workMethod);
     try {
       await broadcastMethod({ jobContract, workMethod, workArguments: [connectors, encodedData, fees, fee], block });
     } catch (error: unknown) {
