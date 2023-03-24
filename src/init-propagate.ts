@@ -12,6 +12,7 @@ const PRIORITY_FEE = 2e9;
 
 (async () => {
   // ENVIRONMENT
+  const flashbotsProviderUrl = getEnvVariable('FLASHBOTS_PROVIDER_URL');
   const provider = new providers.WebSocketProvider(getEnvVariable('RPC_WSS_URI'));
   const arbProvider = new providers.JsonRpcProvider(getEnvVariable('ARBITRUM_RPC_URI'));
   const txSigner = new Wallet(getEnvVariable('TX_SIGNER_PRIVATE_KEY'), provider);
@@ -40,7 +41,7 @@ const PRIORITY_FEE = 2e9;
   console.log('proxyHub: ', proxyHub.address);
 
   // PROVIDERS
-  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner);
+  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
   const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
 
   // INITIALIZE
