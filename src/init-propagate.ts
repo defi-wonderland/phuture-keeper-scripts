@@ -1,4 +1,4 @@
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+import { getMainnetSdk, getGoerliSdk } from '@dethcrypto/eth-sdk-client';
 import { providers, Wallet } from 'ethers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { FlashbotsBroadcastor, getEnvVariable } from '@keep3r-network/keeper-scripting-utils';
@@ -22,10 +22,21 @@ const PRIORITY_FEE = 2e9;
     arbProvider,
     txSigner,
     bundleSigner,
+    environment: getEnvVariable('ENVIRONMENT') as 'staging' | 'testnet' | 'mainnet',
   };
 
   // CONTRACTS
-  const proxyHub = getMainnetSdk(txSigner).relayerProxyHub;
+  let proxyHub;
+  if (setup.environment === 'mainnet') {
+    proxyHub = getMainnetSdk(txSigner).relayerProxyHub;
+  } else if (setup.environment === 'testnet') {
+    proxyHub = getGoerliSdk(txSigner).relayerProxyHub;
+  } else if (setup.environment === 'staging') {
+    proxyHub = getGoerliSdk(txSigner).relayerProxyHubStaging;
+  } else {
+    throw new Error('Invalid environment');
+  }
+  
   console.log('proxyHub: ', proxyHub.address);
 
   // PROVIDERS

@@ -5,6 +5,7 @@ export type InitialSetup = {
   arbProvider: providers.JsonRpcProvider;
   txSigner: Wallet;
   bundleSigner: Wallet;
+  environment: "staging" | "testnet" | "mainnet";
 };
 
 export type ExtraPropagateParam = {

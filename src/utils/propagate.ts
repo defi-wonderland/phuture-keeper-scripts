@@ -8,6 +8,9 @@ export const getParamsForDomainFn: Record<string, (setup: InitialSetup) => Promi
   '1634886255': getPropagateParamsArbitrum,
   '6450786': getPropagateParamsBnb,
   '6778479': getPropagateParamsGnosis,
+  
+  // testnet
+  '1734439522': getPropagateParamsArbitrum,
 };
 
 export async function populateParamsForDomains(

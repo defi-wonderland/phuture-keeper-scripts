@@ -17,8 +17,19 @@ export async function runPropagate(
   // SETUP
   const blockListener = new BlockListener(setup.provider);
   const chainData = await getChainData();
-  const subgraph = await SubgraphReader.create(chainData, 'production');
-  const rootManagerMeta: RootManagerMeta = await subgraph.getRootManagerMeta('6648936');
+  let subgraph: SubgraphReader;
+  if (setup.environment === 'staging') {
+    subgraph = await SubgraphReader.create(chainData, 'staging');
+  } else {
+    subgraph = await SubgraphReader.create(chainData, 'production');
+  }
+
+  let rootManagerMeta: RootManagerMeta;
+  if (setup.environment === 'mainnet') {
+    rootManagerMeta = await subgraph.getRootManagerMeta('6648936');
+  } else {
+    rootManagerMeta = await subgraph.getRootManagerMeta('1735353714');
+  }
   const domains = rootManagerMeta.domains;
 
   blockListener.stream(async (block: Block) => {

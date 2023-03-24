@@ -14,5 +14,15 @@ export default defineConfig({
     bsc: {
       spokeConnector: '0x126A99af70eC62921C07E67943aCF61bF304Ef55',
     },
+    goerli: {
+      relayerProxyHub: '0x28bee75bBAD158Ba6C4CC3D367E68d12a2FA80c4',
+      relayerProxyHubStaging: '0xFBe4c5aD63a7B659217AfB3e6145Bf56678d508F',
+      arbitrumHubConnector: '0x58d3464e5AAb9c598A7059d182720a04aD59b01F',
+      arbitrumHubConnectorStaging: '0x7Cc2798d6f7C00E19F6DA0eFD9e4a0c5497FD928',
+    },
+    arbitrumTestnet: {
+      spokeConnector: '0x0F4E2866D874B94fc7424d7469deB13C8aE7738F',
+      spokeConnectorStaging: '0x644bbF6754527603DB30509AAB74bbeC4FD6EFaD',
+    },
   },
 });
