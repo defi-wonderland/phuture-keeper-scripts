@@ -1,8 +1,8 @@
 import type { providers, Wallet } from 'ethers';
 
 export type InitialSetup = {
-  provider: providers.WebSocketProvider;
-  arbProvider: providers.JsonRpcProvider;
+  provider: providers.JsonRpcProvider | providers.WebSocketProvider;
+  arbProvider: providers.JsonRpcProvider | providers.WebSocketProvider;
   txSigner: Wallet;
   bundleSigner: Wallet;
   environment: "staging" | "testnet" | "mainnet";
