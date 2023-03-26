@@ -38,6 +38,7 @@ export async function runPropagate(
     // encode data for relayer proxy hub
 
     try {
+      console.log({ jobContract: jobContract.address, workMethod, workArguments: [connectors, fees, encodedData], block: block.number });
       await broadcastMethod({ jobContract, workMethod, workArguments: [connectors, fees, encodedData], block });
     } catch (error: unknown) {
       if (error instanceof Error) console.log(`Propagate failed with:`, error.message);
