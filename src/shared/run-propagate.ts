@@ -1,4 +1,4 @@
-import { Contract, BigNumber } from 'ethers';
+import { Contract } from 'ethers';
 import type { Block } from '@ethersproject/abstract-provider';
 import type { BroadcastorProps } from '@keep3r-network/keeper-scripting-utils';
 import { BlockListener } from '@keep3r-network/keeper-scripting-utils';

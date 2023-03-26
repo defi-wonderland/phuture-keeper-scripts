@@ -1,6 +1,12 @@
 import { RootManagerMeta } from '@connext/nxtp-utils';
 import { BigNumber, constants } from 'ethers';
-import { getPropagateParamsArbitrum, getPropagateParamsBnb, getPropagateParamsGnosis } from '../helpers/propagate';
+import {
+  getPropagateParamsArbitrum,
+  getPropagateParamsBnb,
+  getPropagateParamsConsensys,
+  getPropagateParamsGnosis,
+  getPropagateParamsZkSync,
+} from '../helpers/propagate';
 import { ExtraPropagateParam, InitialSetup, ParamsForDomains } from './types';
 
 export const getParamsForDomainFn: Record<string, (setup: InitialSetup) => Promise<ExtraPropagateParam>> = {
@@ -8,9 +14,11 @@ export const getParamsForDomainFn: Record<string, (setup: InitialSetup) => Promi
   '1634886255': getPropagateParamsArbitrum,
   '6450786': getPropagateParamsBnb,
   '6778479': getPropagateParamsGnosis,
-  
+
   // testnet
   '1734439522': getPropagateParamsArbitrum,
+  '2053862260': getPropagateParamsZkSync,
+  '1668247156': getPropagateParamsConsensys,
 };
 
 export async function populateParamsForDomains(
