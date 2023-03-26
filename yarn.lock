@@ -745,6 +745,7 @@ __metadata:
     typescript: 4.9.5
     undici: 5.10.0
     xo: 0.52.3
+    zksync-web3: ^0.14.3
   languageName: unknown
   linkType: soft
 
@@ -15814,6 +15815,15 @@ __metadata:
     property-expr: ^2.0.4
     toposort: ^2.0.2
   checksum: 43a16786b47cc910fed4891cebdd89df6d6e31702e9462e8f969c73eac88551ce750732608012201ea6b93802c8847cb0aa27b5d57370640f4ecf30f9f97d4b0
+  languageName: node
+  linkType: hard
+
+"zksync-web3@npm:^0.14.3":
+  version: 0.14.3
+  resolution: "zksync-web3@npm:0.14.3"
+  peerDependencies:
+    ethers: ^5.7.0
+  checksum: e89760c13e01ec43433e1e38a473138948c6a8d3a825c0f0aa6328eb7d28c63037a5ee4c922c1fd7d9580d2bf2cbbf2c7911f5e4d872f856dc591850a7e6f260
   languageName: node
   linkType: hard
 
