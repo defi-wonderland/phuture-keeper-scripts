@@ -7,9 +7,10 @@ import { SubgraphReader } from '@connext/nxtp-adapters-subgraph';
 
 import { populateParamsForDomains } from '../utils/propagate';
 import { InitialSetup } from '../utils/types';
+import { MainnetSdk } from '@dethcrypto/eth-sdk-client';
 
 export async function runPropagate(
-  jobContract: Contract,
+  jobContract: MainnetSdk['relayerProxyHub'],
   setup: InitialSetup,
   workMethod: string,
   broadcastMethod: (props: BroadcastorProps) => Promise<void>
@@ -33,9 +34,14 @@ export async function runPropagate(
   const domains = rootManagerMeta.domains;
 
   blockListener.stream(async (block: Block) => {
-    const { connectors, encodedData, fees } = await populateParamsForDomains(domains, rootManagerMeta, setup);
-
+    const isWorkable = await jobContract.propagateWorkable();
+    if (!isWorkable) {
+      console.log(`Propagate not workable`);
+      return;
+    }
+    
     // encode data for relayer proxy hub
+    const { connectors, encodedData, fees } = await populateParamsForDomains(domains, rootManagerMeta, setup);
 
     try {
       console.log({ jobContract: jobContract.address, workMethod, workArguments: [connectors, fees, encodedData], block: block.number });

@@ -1,4 +1,4 @@
-import { getMainnetSdk, getGoerliSdk } from '@dethcrypto/eth-sdk-client';
+import { getMainnetSdk, getGoerliSdk, MainnetSdk } from '@dethcrypto/eth-sdk-client';
 import { providers, Wallet } from 'ethers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { FlashbotsBroadcastor, getEnvVariable, MempoolBroadcastor } from '@keep3r-network/keeper-scripting-utils';
@@ -37,7 +37,7 @@ const PRIORITY_FEE = 2e9;
   } else {
     throw new Error('Invalid environment');
   }
-  
+
   console.log('proxyHub: ', proxyHub.address);
 
   // PROVIDERS
@@ -46,5 +46,10 @@ const PRIORITY_FEE = 2e9;
   const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
 
   // INITIALIZE
-  await runPropagate(proxyHub, setup, WORK_FUNCTION, mempoolBroadcastor.tryToWorkOnMempool.bind(mempoolBroadcastor));
+  await runPropagate(
+    proxyHub as MainnetSdk['relayerProxyHub'],
+    setup,
+    WORK_FUNCTION,
+    mempoolBroadcastor.tryToWorkOnMempool.bind(mempoolBroadcastor)
+  );
 })();
