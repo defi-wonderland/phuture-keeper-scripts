@@ -1,7 +1,7 @@
 import { getMainnetSdk, getGoerliSdk } from '@dethcrypto/eth-sdk-client';
 import { providers, Wallet } from 'ethers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { FlashbotsBroadcastor, getEnvVariable } from '@keep3r-network/keeper-scripting-utils';
+import { FlashbotsBroadcastor, getEnvVariable, MempoolBroadcastor } from '@keep3r-network/keeper-scripting-utils';
 import { runPropagate } from './shared/run-propagate';
 import { InitialSetup } from './utils/types';
 
@@ -41,9 +41,15 @@ const PRIORITY_FEE = 2e9;
   console.log('proxyHub: ', proxyHub.address);
 
   // PROVIDERS
-  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
-  const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
+  // flashbots:
+  // const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
+  // const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
+  // mempool:
+  const mempoolBroadcastor = new MempoolBroadcastor(provider, PRIORITY_FEE, GAS_LIMIT);
 
   // INITIALIZE
-  await runPropagate(proxyHub, setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
+  // flashbots:
+  // await runPropagate(proxyHub, setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
+  // mempool:
+  await runPropagate(proxyHub, setup, WORK_FUNCTION, mempoolBroadcastor.tryToWorkOnMempool.bind(mempoolBroadcastor));
 })();
