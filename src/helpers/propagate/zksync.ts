@@ -40,8 +40,10 @@ export const getPropagateParams = async ({ provider }: InitialSetup): Promise<Ex
   const gasLimit = BigNumber.from(10000000);
   const gasPerPubdataByte = BigNumber.from(800);
 
-  const l2Provider = new Provider('https://mainnet.era.zksync.io');
-  const zkSyncContract = new Contract(await l2Provider.getMainContractAddress(), ZKSYNC_ABI, provider);
+  const l2Provider = new Provider('https://testnet.era.zksync.dev');
+  const zk = await l2Provider.getMainContractAddress();
+  console.log('zk: ', zk);
+  const zkSyncContract = new Contract(zk, ZKSYNC_ABI, provider);
   const txCostPrice = await zkSyncContract.l2TransactionBaseCost(gasPrice, gasLimit, gasPerPubdataByte);
 
   const encodedData = utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);

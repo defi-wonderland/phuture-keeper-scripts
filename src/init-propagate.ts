@@ -41,11 +41,16 @@ const PRIORITY_FEE = 2e9;
   console.log('proxyHub: ', proxyHub.address);
 
   // PROVIDERS
+  // flashbots:
+  // const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
+  // const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
+  // mempool:
   const mempoolBroadcastor = new MempoolBroadcastor(provider, PRIORITY_FEE, GAS_LIMIT);
-  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
-  const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
 
   // INITIALIZE
+  // flashbots:
+  // await runPropagate(proxyHub, setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
+  // mempool:
   await runPropagate(
     proxyHub as MainnetSdk['relayerProxyHub'],
     setup,

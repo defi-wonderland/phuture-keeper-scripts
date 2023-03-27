@@ -44,7 +44,8 @@ export async function runPropagate(
     const { connectors, encodedData, fees } = await populateParamsForDomains(domains, rootManagerMeta, setup);
 
     try {
-      console.log({ jobContract: jobContract.address, workMethod, workArguments: [connectors, fees, encodedData], block: block.number });
+      // TODO: delete this
+      console.debug({ jobContract: jobContract.address, workMethod, workArguments: [connectors, fees, encodedData], block: block.number });
       await broadcastMethod({ jobContract, workMethod, workArguments: [connectors, fees, encodedData], block });
     } catch (error: unknown) {
       if (error instanceof Error) console.log(`Propagate failed with:`, error.message);
