@@ -15,8 +15,8 @@ export default defineConfig({
       spokeConnector: '0x126A99af70eC62921C07E67943aCF61bF304Ef55',
     },
     goerli: {
-      relayerProxyHub: '0xD4970B59bde6DabDc0B705d750833aC9416E9374',
-      relayerProxyHubStaging: '0x5cC220030AFf5a2068A62FEaC09553f0B6604f60',
+      relayerProxyHub: '0x0fE270a3DeC683BB309C7b50272e3d637f19A2aB',
+      relayerProxyHubStaging: '0x8AcA83F46d57a1d2C7E0a72E44687c75aF6cbe21',
       arbitrumHubConnector: '0x58d3464e5AAb9c598A7059d182720a04aD59b01F',
       arbitrumHubConnectorStaging: '0x7Cc2798d6f7C00E19F6DA0eFD9e4a0c5497FD928',
     },
