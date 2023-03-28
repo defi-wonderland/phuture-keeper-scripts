@@ -3,7 +3,7 @@ import { defineConfig } from '@dethcrypto/eth-sdk';
 export default defineConfig({
   contracts: {
     mainnet: {
-      relayerProxyHub: '0x9e4C8BC2A9Dc9295EF96c0CFE9520cc2FdED4DB0',
+      relayerProxyHub: '0x81Bf17fB3b129dE1Fd3C58D6A1785061d763B863',
       arbitrumHubConnector: '0xd151C9ef49cE2d30B829a98A07767E3280F70961',
       bnbHubConnector: '0xfaf539a73659feaec96ec7242f075be0445526a8',
       gnosisHubConnector: '0x245F757d660C3ec65416168690431076d58d6413',
@@ -24,5 +24,10 @@ export default defineConfig({
       spokeConnector: '0x0F4E2866D874B94fc7424d7469deB13C8aE7738F',
       spokeConnectorStaging: '0x644bbF6754527603DB30509AAB74bbeC4FD6EFaD',
     },
+  },
+  rpc: {
+    arbitrumOne: 'https://arb1.arbitrum.io/rpc',
+    bsc: 'https://bsc-dataseed.binance.org/',
+    arbitrumTestnet: 'https://goerli-rollup.arbitrum.io/rpc',
   },
 });
