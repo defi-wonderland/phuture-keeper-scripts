@@ -24,6 +24,8 @@ const PRIORITY_FEE = 2e9;
     txSigner,
     bundleSigner,
     environment: getEnvVariable('ENVIRONMENT') as 'staging' | 'testnet' | 'mainnet',
+    listenerIntervalDelay: Number(process.env['LISTENER_INTERVAL_DELAY'] || 60_000),
+    listenerBlockDelay: Number(process.env['LISTENER_BLOCK_DELAY'] || 0),
   };
 
   // CONTRACTS
@@ -38,23 +40,12 @@ const PRIORITY_FEE = 2e9;
     throw new Error('Invalid environment');
   }
 
-  console.log('proxyHub: ', proxyHub.address);
+  console.log(`Proxy Hub:`, proxyHub.address);
 
   // PROVIDERS
-  // flashbots:
-  // const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
-  // const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
-  // mempool:
-  const mempoolBroadcastor = new MempoolBroadcastor(provider, PRIORITY_FEE, GAS_LIMIT);
+  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
+  const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
 
   // INITIALIZE
-  // flashbots:
-  // await runPropagate(proxyHub, setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
-  // mempool:
-  await runPropagate(
-    proxyHub as MainnetSdk['relayerProxyHub'],
-    setup,
-    WORK_FUNCTION,
-    mempoolBroadcastor.tryToWorkOnMempool.bind(mempoolBroadcastor)
-  );
+  await runPropagate(proxyHub as MainnetSdk['relayerProxyHub'], setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
 })();
