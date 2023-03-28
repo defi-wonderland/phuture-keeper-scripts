@@ -6,6 +6,8 @@ export type InitialSetup = {
   txSigner: Wallet;
   bundleSigner: Wallet;
   environment: "staging" | "testnet" | "mainnet";
+  listenerIntervalDelay: number;
+  listenerBlockDelay: number;
 };
 
 export type ExtraPropagateParam = {

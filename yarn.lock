@@ -725,7 +725,7 @@ __metadata:
     "@dethcrypto/eth-sdk": 0.3.3
     "@dethcrypto/eth-sdk-client": 0.1.6
     "@eth-optimism/sdk": ^2.0.0
-    "@keep3r-network/keeper-scripting-utils": 0.0.0-bcd23fa4
+    "@keep3r-network/keeper-scripting-utils": 1.1.0
     "@types/lodash.isequal": 4.5.6
     dotenv: 16.0.3
     ethers: 5.6.9
@@ -3245,16 +3245,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@keep3r-network/keeper-scripting-utils@npm:0.0.0-bcd23fa4":
-  version: 0.0.0-bcd23fa4
-  resolution: "@keep3r-network/keeper-scripting-utils@npm:0.0.0-bcd23fa4"
+"@keep3r-network/keeper-scripting-utils@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@keep3r-network/keeper-scripting-utils@npm:1.1.0"
   dependencies:
     "@flashbots/ethers-provider-bundle": 0.5.0
     chalk: 4.1.1
     dotenv: 16.0.1
     ethers: 5.6.9
     rxjs: 7.5.6
-  checksum: 380236dd436e67040a51343c4a53c8d9ddb7343c1c698290c2f76072066a006c434cb22ae08e33f98b4bbeda606bfdd2da8223b19c12470df7040c836edd5b04
+  checksum: add501a2cdee147418ff4c6952d1e435a3079f10b459d5d979aec91345c6b8eba727bb24c91fcae869952a25fd8e79f73d389aec0347e5e6177bbf8c4d2a87c5
   languageName: node
   linkType: hard
 

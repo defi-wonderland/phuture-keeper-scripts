@@ -42,7 +42,6 @@ export const getPropagateParams = async ({ provider }: InitialSetup): Promise<Ex
 
   const l2Provider = new Provider('https://testnet.era.zksync.dev');
   const zk = await l2Provider.getMainContractAddress();
-  console.log('zk: ', zk);
   const zkSyncContract = new Contract(zk, ZKSYNC_ABI, provider);
   const txCostPrice = await zkSyncContract.l2TransactionBaseCost(gasPrice, gasLimit, gasPerPubdataByte);
 
