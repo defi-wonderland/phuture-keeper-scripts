@@ -1,22 +1,22 @@
-import type { providers, Wallet } from 'ethers';
+import type {providers, Wallet} from 'ethers';
 
 export type InitialSetup = {
   provider: providers.JsonRpcProvider | providers.WebSocketProvider;
   arbProvider: providers.JsonRpcProvider | providers.WebSocketProvider;
   txSigner: Wallet;
   bundleSigner: Wallet;
-  environment: "staging" | "testnet" | "mainnet";
+  environment: 'staging' | 'testnet' | 'mainnet';
   listenerIntervalDelay: number;
   listenerBlockDelay: number;
 };
 
-export type ExtraPropagateParam = {
-  _connector: string;
-  _fee: string;
-  _encodedData: string;
+export type ExtraPropagateParameters = {
+  connector: string;
+  fee: string;
+  encodedData: string;
 };
 
-export type ParamsForDomains = {
+export type ParametersForDomains = {
   connectors: string[];
   encodedData: string[];
   fees: string[];
