@@ -7,10 +7,10 @@ import { SubgraphReader } from '@connext/nxtp-adapters-subgraph';
 
 import { populateParamsForDomains } from '../utils/propagate';
 import { InitialSetup } from '../utils/types';
-import { MainnetSdk } from '@dethcrypto/eth-sdk-client';
+import { RelayerProxyHub } from '.dethcrypto/eth-sdk-client/esm/types/mainnet';
 
 export async function runPropagate(
-  jobContract: MainnetSdk['relayerProxyHub'],
+  jobContract: RelayerProxyHub,
   setup: InitialSetup,
   workMethod: string,
   broadcastMethod: (props: BroadcastorProps) => Promise<void>

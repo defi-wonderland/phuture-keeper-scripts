@@ -31,8 +31,8 @@ const PRIORITY_FEE = 2e9;
 
   const envProxyHub: Record<Environment, RelayerProxyHub> = {
     'mainnet': getMainnetSdk(txSigner).relayerProxyHub,
-    'testnet': getGoerliSdk(txSigner).relayerProxyHub,
-    'staging': getGoerliSdk(txSigner).relayerProxyHubStaging,
+    'testnet': getGoerliSdk(txSigner).relayerProxyHub as unknown as RelayerProxyHub,
+    'staging': getGoerliSdk(txSigner).relayerProxyHubStaging as unknown as RelayerProxyHub,
   };
   const proxyHub: RelayerProxyHub | undefined = envProxyHub[setup.environment];
   if (!proxyHub) throw new Error('Invalid environment');
