@@ -29,7 +29,7 @@ export async function runPropagate(
 
   blockListener.stream(
     async (block: Block) => {
-      const isWorkable = await jobContract.propagateWorkable();
+      const isWorkable = await jobContract.callStatic.propagateWorkable();
       if (!isWorkable) {
         console.log(`Propagate not workable`);
         return;
