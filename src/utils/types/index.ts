@@ -21,3 +21,5 @@ export type ParamsForDomains = {
   encodedData: string[];
   fees: string[];
 };
+
+export type Environment = 'staging' | 'testnet' | 'mainnet';

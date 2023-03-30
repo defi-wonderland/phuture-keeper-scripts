@@ -3,7 +3,8 @@ import { providers, Wallet } from 'ethers';
 import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
 import { FlashbotsBroadcastor, getEnvVariable, MempoolBroadcastor } from '@keep3r-network/keeper-scripting-utils';
 import { runPropagate } from './shared/run-propagate';
-import { InitialSetup } from './utils/types';
+import { Environment, InitialSetup } from './utils/types';
+import { RelayerProxyHub } from '.dethcrypto/eth-sdk-client/esm/types/mainnet';
 
 // SETUP
 const WORK_FUNCTION = 'propagateKeep3r';
@@ -23,29 +24,29 @@ const PRIORITY_FEE = 2e9;
     arbProvider,
     txSigner,
     bundleSigner,
-    environment: getEnvVariable('ENVIRONMENT') as 'staging' | 'testnet' | 'mainnet',
+    environment: getEnvVariable('ENVIRONMENT') as Environment,
     listenerIntervalDelay: Number(process.env['LISTENER_INTERVAL_DELAY'] || 60_000),
     listenerBlockDelay: Number(process.env['LISTENER_BLOCK_DELAY'] || 0),
   };
 
-  // CONTRACTS
-  let proxyHub;
-  if (setup.environment === 'mainnet') {
-    proxyHub = getMainnetSdk(txSigner).relayerProxyHub;
-  } else if (setup.environment === 'testnet') {
-    proxyHub = getGoerliSdk(txSigner).relayerProxyHub;
-  } else if (setup.environment === 'staging') {
-    proxyHub = getGoerliSdk(txSigner).relayerProxyHubStaging;
-  } else {
-    throw new Error('Invalid environment');
-  }
+  const envProxyHub: Record<Environment, RelayerProxyHub> = {
+    'mainnet': getMainnetSdk(txSigner).relayerProxyHub,
+    'testnet': getGoerliSdk(txSigner).relayerProxyHub,
+    'staging': getGoerliSdk(txSigner).relayerProxyHubStaging,
+  };
+  const proxyHub: RelayerProxyHub | undefined = envProxyHub[setup.environment];
+  if (!proxyHub) throw new Error('Invalid environment');
 
   console.log(`Proxy Hub:`, proxyHub.address);
 
-  // PROVIDERS
-  const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
-  const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
-
-  // INITIALIZE
-  await runPropagate(proxyHub as MainnetSdk['relayerProxyHub'], setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
+  if (setup.environment === 'mainnet') {
+    // In ethereum mainnet, send the tx through flashbots
+    const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
+    const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
+    await runPropagate(proxyHub, setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
+  } else {
+    // In goerli, since flashbots are less reliable, send the tx through the mempool
+    const mempoolBroadcastor = new MempoolBroadcastor(provider, PRIORITY_FEE, GAS_LIMIT);
+    await runPropagate(proxyHub, setup, WORK_FUNCTION, mempoolBroadcastor.tryToWorkOnMempool.bind(mempoolBroadcastor));
+  }
 })();
