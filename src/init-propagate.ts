@@ -1,10 +1,11 @@
-import { getMainnetSdk, getGoerliSdk, MainnetSdk } from '@dethcrypto/eth-sdk-client';
-import { providers, Wallet } from 'ethers';
-import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
-import { FlashbotsBroadcastor, getEnvVariable, MempoolBroadcastor } from '@keep3r-network/keeper-scripting-utils';
-import { runPropagate } from './shared/run-propagate';
-import { Environment, InitialSetup } from './utils/types';
-import { RelayerProxyHub } from '.dethcrypto/eth-sdk-client/esm/types/mainnet';
+import process from 'node:process';
+import {getMainnetSdk, getGoerliSdk, MainnetSdk} from '@dethcrypto/eth-sdk-client';
+import {providers, Wallet} from 'ethers';
+import {FlashbotsBundleProvider} from '@flashbots/ethers-provider-bundle';
+import {FlashbotsBroadcastor, getEnvVariable, MempoolBroadcastor} from '@keep3r-network/keeper-scripting-utils';
+import {type RelayerProxyHub} from '.dethcrypto/eth-sdk-client/esm/types/mainnet';
+import {runPropagate} from './shared/run-propagate';
+import {type Environment, type InitialSetup} from './utils/types';
 
 // SETUP
 const WORK_FUNCTION = 'propagateKeep3r';
@@ -25,14 +26,14 @@ const PRIORITY_FEE = 2e9;
     txSigner,
     bundleSigner,
     environment: getEnvVariable('ENVIRONMENT') as Environment,
-    listenerIntervalDelay: Number(process.env['LISTENER_INTERVAL_DELAY'] || 60_000),
-    listenerBlockDelay: Number(process.env['LISTENER_BLOCK_DELAY'] || 0),
+    listenerIntervalDelay: Number(process.env.LISTENER_INTERVAL_DELAY ?? 60_000),
+    listenerBlockDelay: Number(process.env.LISTENER_BLOCK_DELAY ?? 0),
   };
 
   const envProxyHub: Record<Environment, RelayerProxyHub> = {
-    'mainnet': getMainnetSdk(txSigner).relayerProxyHub,
-    'testnet': getGoerliSdk(txSigner).relayerProxyHub,
-    'staging': getGoerliSdk(txSigner).relayerProxyHubStaging,
+    mainnet: getMainnetSdk(txSigner).relayerProxyHub,
+    testnet: getGoerliSdk(txSigner).relayerProxyHub as unknown as RelayerProxyHub,
+    staging: getGoerliSdk(txSigner).relayerProxyHubStaging as unknown as RelayerProxyHub,
   };
   const proxyHub: RelayerProxyHub | undefined = envProxyHub[setup.environment];
   if (!proxyHub) throw new Error('Invalid environment');
@@ -42,7 +43,7 @@ const PRIORITY_FEE = 2e9;
   if (setup.environment === 'mainnet') {
     // In ethereum mainnet, send the tx through flashbots
     const flashbotsProvider = await FlashbotsBundleProvider.create(provider, bundleSigner, flashbotsProviderUrl);
-    const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider, PRIORITY_FEE, GAS_LIMIT);
+    const flashbotBroadcastor = new FlashbotsBroadcastor(flashbotsProvider as any, PRIORITY_FEE, GAS_LIMIT);
     await runPropagate(proxyHub, setup, WORK_FUNCTION, flashbotBroadcastor.tryToWorkOnFlashbots.bind(flashbotBroadcastor));
   } else {
     // In goerli, since flashbots are less reliable, send the tx through the mempool

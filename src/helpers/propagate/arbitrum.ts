@@ -1,12 +1,12 @@
-import { BigNumber, constants, utils } from 'ethers';
-import { L1ToL2MessageGasEstimator } from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator';
-import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
-import { getArbitrumOneSdk, getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+import {BigNumber, constants, utils} from 'ethers';
+import {L1ToL2MessageGasEstimator} from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator';
+import {getBaseFee} from '@arbitrum/sdk/dist/lib/utils/lib';
+import {getArbitrumOneSdk, getMainnetSdk} from '@dethcrypto/eth-sdk-client';
 
-import { ExtraPropagateParam, InitialSetup } from 'src/utils/types';
+import {type ExtraPropagateParameters, type InitialSetup} from 'src/utils/types';
 
-// example at https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/greeter/scripts/exec.js
-export const getPropagateParams = async ({ txSigner, arbProvider, provider }: InitialSetup): Promise<ExtraPropagateParam> => {
+// Example at https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/greeter/scripts/exec.js
+export const getPropagateParameters = async ({txSigner, arbProvider, provider}: InitialSetup): Promise<ExtraPropagateParameters> => {
   let submissionPriceWei;
   let maxGas;
   let gasPriceBid;
@@ -18,17 +18,15 @@ export const getPropagateParams = async ({ txSigner, arbProvider, provider }: In
   const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(arbProvider);
 
   try {
-    // example encoded payload: 0x4ff746f6000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000207465737400000000000000000000000000000000000000000000000000000000
+    // Example encoded payload: 0x4ff746f6000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000207465737400000000000000000000000000000000000000000000000000000000
     // length = 200 not including 0x = 100 bytes
-    // TODO: verify this is the correct payload to use
-
     gasPriceBid = await provider.getGasPrice();
 
     const baseFee = await getBaseFee(provider);
     const callData = arbSdk.spokeConnector.interface.encodeFunctionData('processMessage', [
       '0x0000000000000000000000000000000000000000000000000000000000000001',
     ]);
-    const L1ToL2MessageGasParams = await l1ToL2MessageGasEstimate.estimateAll(
+    const l1ToL2MessageGasParameters = await l1ToL2MessageGasEstimate.estimateAll(
       mainnetSdk.arbitrumHubConnector.address,
       arbSdk.spokeConnector.address,
       callData,
@@ -36,16 +34,16 @@ export const getPropagateParams = async ({ txSigner, arbProvider, provider }: In
       baseFee,
       arbSdk.spokeConnector.address,
       arbSdk.spokeConnector.address,
-      provider
+      provider,
     );
-    const gasLimitForAutoRedeem = L1ToL2MessageGasParams.gasLimit.mul(5);
+    const gasLimitForAutoRedeem = l1ToL2MessageGasParameters.gasLimit.mul(5);
 
-    submissionPriceWei = L1ToL2MessageGasParams.maxSubmissionFee.mul(5).toString();
-    // multiply gasLimit by 15 to be successful in auto-redeem
+    submissionPriceWei = l1ToL2MessageGasParameters.maxSubmissionFee.mul(5).toString();
+    // Multiply gasLimit by 15 to be successful in auto-redeem
     maxGas = gasLimitForAutoRedeem.toString();
     callValue = BigNumber.from(submissionPriceWei).add(gasPriceBid.mul(maxGas)).toString();
-  } catch (err: unknown) {
-    console.log(err);
+  } catch (error: unknown) {
+    console.log(error);
     submissionPriceWei = '0';
     maxGas = '0';
     gasPriceBid = '0';
@@ -54,5 +52,5 @@ export const getPropagateParams = async ({ txSigner, arbProvider, provider }: In
 
   const encodedData = utils.defaultAbiCoder.encode(['uint256', 'uint256', 'uint256'], [submissionPriceWei, maxGas, gasPriceBid]);
 
-  return { _connector: '', _fee: callValue, _encodedData: encodedData };
+  return {connector: '', fee: callValue, encodedData};
 };

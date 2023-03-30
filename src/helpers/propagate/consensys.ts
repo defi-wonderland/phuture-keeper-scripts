@@ -1,8 +1,8 @@
-import { utils } from 'ethers';
-import { ExtraPropagateParam } from 'src/utils/types';
+import {utils} from 'ethers';
+import {type ExtraPropagateParameters} from 'src/utils/types';
 
-export const getPropagateParams = async (): Promise<ExtraPropagateParam> => {
-  const _fee = utils.parseEther('0.01').toString();
+export const getPropagateParameters = async (): Promise<ExtraPropagateParameters> => {
+  const fee = utils.parseEther('0.01').toString();
 
-  return { _connector: '', _fee, _encodedData: '0x' };
+  return {connector: '', fee, encodedData: '0x'};
 };

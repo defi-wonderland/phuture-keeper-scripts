@@ -1,52 +1,50 @@
-import { Contract } from 'ethers';
-import type { Block } from '@ethersproject/abstract-provider';
-import type { BroadcastorProps } from '@keep3r-network/keeper-scripting-utils';
-import { BlockListener } from '@keep3r-network/keeper-scripting-utils';
-import { getChainData, RootManagerMeta } from '@connext/nxtp-utils';
-import { SubgraphReader } from '@connext/nxtp-adapters-subgraph';
+import {Contract} from 'ethers';
+import type {Block} from '@ethersproject/abstract-provider';
+import type {BroadcastorProps} from '@keep3r-network/keeper-scripting-utils';
+import {BlockListener} from '@keep3r-network/keeper-scripting-utils';
+import {getChainData, type RootManagerMeta} from '@connext/nxtp-utils';
+import {SubgraphReader} from '@connext/nxtp-adapters-subgraph';
 
-import { populateParamsForDomains } from '../utils/propagate';
-import { InitialSetup } from '../utils/types';
-import { MainnetSdk } from '@dethcrypto/eth-sdk-client';
+import {type RelayerProxyHub} from '.dethcrypto/eth-sdk-client/esm/types/mainnet';
+import {populateParametersForDomains} from '../utils/propagate';
+import {type InitialSetup} from '../utils/types';
 
 export async function runPropagate(
-  jobContract: MainnetSdk['relayerProxyHub'],
+  jobContract: RelayerProxyHub,
   setup: InitialSetup,
   workMethod: string,
-  broadcastMethod: (props: BroadcastorProps) => Promise<void>
+  broadcastMethod: (props: BroadcastorProps) => Promise<void>,
 ) {
   // SETUP
   const blockListener = new BlockListener(setup.provider);
   const chainData = await getChainData();
-  let subgraph: SubgraphReader;
-  if (setup.environment === 'staging') {
-    subgraph = await SubgraphReader.create(chainData, 'staging');
-  } else {
-    subgraph = await SubgraphReader.create(chainData, 'production');
-  }
+  const subgraph = await (setup.environment === 'staging'
+    ? SubgraphReader.create(chainData, 'staging')
+    : SubgraphReader.create(chainData, 'production'));
 
-  let rootManagerMeta: RootManagerMeta;
-  if (setup.environment === 'mainnet') {
-    rootManagerMeta = await subgraph.getRootManagerMeta('6648936');
-  } else {
-    rootManagerMeta = await subgraph.getRootManagerMeta('1735353714');
-  }
+  const rootManagerMeta = await (setup.environment === 'mainnet'
+    ? subgraph.getRootManagerMeta('6648936')
+    : subgraph.getRootManagerMeta('1735353714'));
   const domains = rootManagerMeta.domains;
 
-  blockListener.stream(async (block: Block) => {
-    const isWorkable = await jobContract.propagateWorkable();
-    if (!isWorkable) {
-      console.log(`Propagate not workable`);
-      return;
-    }
-    
-    // encode data for relayer proxy hub
-    const { connectors, encodedData, fees } = await populateParamsForDomains(domains, rootManagerMeta, setup);
+  blockListener.stream(
+    async (block: Block) => {
+      const isWorkable = await jobContract.propagateWorkable();
+      if (!isWorkable) {
+        console.log(`Propagate not workable`);
+        return;
+      }
 
-    try {
-      await broadcastMethod({ jobContract, workMethod, workArguments: [connectors, fees, encodedData], block });
-    } catch (error: unknown) {
-      if (error instanceof Error) console.log(`Propagate failed with:`, error.message);
-    }
-  }, setup.listenerIntervalDelay, setup.listenerBlockDelay);
+      // Encode data for relayer proxy hub
+      const {connectors, encodedData, fees} = await populateParametersForDomains(domains, rootManagerMeta, setup);
+
+      try {
+        await broadcastMethod({jobContract, workMethod, workArguments: [connectors, fees, encodedData], block});
+      } catch (error: unknown) {
+        if (error instanceof Error) console.log(`Propagate failed with:`, error.message);
+      }
+    },
+    setup.listenerIntervalDelay,
+    setup.listenerBlockDelay,
+  );
 }

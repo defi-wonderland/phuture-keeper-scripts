@@ -1,5 +1,5 @@
-export { getPropagateParams as getPropagateParamsArbitrum } from "./arbitrum";
-export { getPropagateParams as getPropagateParamsBnb } from "./bnb";
-export { getPropagateParams as getPropagateParamsGnosis } from "./gnosis";
-export { getPropagateParams as getPropagateParamsZkSync } from "./zksync";
-export { getPropagateParams as getPropagateParamsConsensys } from "./consensys";
+export {getPropagateParameters as getPropagateParametersArbitrum} from './arbitrum';
+export {getPropagateParameters as getPropagateParametersBnb} from './bnb';
+export {getPropagateParameters as getPropagateParametersGnosis} from './gnosis';
+export {getPropagateParameters as getPropagateParametersZkSync} from './zksync';
+export {getPropagateParameters as getPropagateParametersConsensys} from './consensys';

@@ -1,7 +1,7 @@
-import { BigNumber, Contract, utils } from 'ethers';
-import { Provider } from 'zksync-web3';
+import {BigNumber, Contract, utils} from 'ethers';
+import {Provider} from 'zksync-web3';
 
-import { ExtraPropagateParam, InitialSetup } from 'src/utils/types';
+import {type ExtraPropagateParameters, type InitialSetup} from 'src/utils/types';
 
 const ZKSYNC_ABI = [
   {
@@ -35,9 +35,9 @@ const ZKSYNC_ABI = [
   },
 ];
 
-export const getPropagateParams = async ({ provider }: InitialSetup): Promise<ExtraPropagateParam> => {
+export const getPropagateParameters = async ({provider}: InitialSetup): Promise<ExtraPropagateParameters> => {
   const gasPrice = await provider.getGasPrice();
-  const gasLimit = BigNumber.from(10000000);
+  const gasLimit = BigNumber.from(10_000_000);
   const gasPerPubdataByte = BigNumber.from(800);
 
   const l2Provider = new Provider('https://testnet.era.zksync.dev');
@@ -47,5 +47,5 @@ export const getPropagateParams = async ({ provider }: InitialSetup): Promise<Ex
 
   const encodedData = utils.defaultAbiCoder.encode(['uint256'], [gasLimit]);
 
-  return { _connector: '', _fee: txCostPrice.toString(), _encodedData: encodedData };
+  return {connector: '', fee: txCostPrice.toString(), encodedData};
 };

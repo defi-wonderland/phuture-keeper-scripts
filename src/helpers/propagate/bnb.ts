@@ -1,18 +1,18 @@
-import { Contract } from 'ethers';
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+import {Contract} from 'ethers';
+import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
 
-import { ExtraPropagateParam, InitialSetup } from 'src/utils/types';
+import {type ExtraPropagateParameters, type InitialSetup} from 'src/utils/types';
 
-export const getPropagateParams = async ({ txSigner, provider }: InitialSetup): Promise<ExtraPropagateParam> => {
+export const getPropagateParameters = async ({txSigner, provider}: InitialSetup): Promise<ExtraPropagateParameters> => {
   const mainnetSdk = getMainnetSdk(txSigner);
   const ambAddress = await mainnetSdk.bnbHubConnector.AMB();
 
   const ambContract = new Contract(
     ambAddress,
     ['function calcSrcFees(string calldata _appID, uint256 _toChainID, uint256 _dataLength) external view returns (uint256)'],
-    provider
+    provider,
   );
   const fee = await ambContract.calcSrcFees('', 56, 32);
 
-  return { _connector: '', _fee: fee, _encodedData: '0x' };
+  return {connector: '', fee, encodedData: '0x'};
 };

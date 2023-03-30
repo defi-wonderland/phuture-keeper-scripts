@@ -1,55 +1,55 @@
-import { RootManagerMeta } from '@connext/nxtp-utils';
-import { BigNumber, constants } from 'ethers';
+import {type RootManagerMeta} from '@connext/nxtp-utils';
+import {BigNumber, constants} from 'ethers';
 import {
-  getPropagateParamsArbitrum,
-  getPropagateParamsBnb,
-  getPropagateParamsConsensys,
-  getPropagateParamsGnosis,
-  getPropagateParamsZkSync,
+  getPropagateParametersArbitrum,
+  getPropagateParametersBnb,
+  getPropagateParametersConsensys,
+  getPropagateParametersGnosis,
+  getPropagateParametersZkSync,
 } from '../helpers/propagate';
-import { ExtraPropagateParam, InitialSetup, ParamsForDomains } from './types';
+import {type ExtraPropagateParameters, type InitialSetup, type ParametersForDomains} from './types';
 
-export const getParamsForDomainFn: Record<string, (setup: InitialSetup) => Promise<ExtraPropagateParam>> = {
-  // mainnet
-  '1634886255': getPropagateParamsArbitrum,
-  '6450786': getPropagateParamsBnb,
-  '6778479': getPropagateParamsGnosis,
+export const getParametersForDomainFn: Record<string, (setup: InitialSetup) => Promise<ExtraPropagateParameters>> = {
+  // Mainnet
+  '1634886255': getPropagateParametersArbitrum,
+  '6450786': getPropagateParametersBnb,
+  '6778479': getPropagateParametersGnosis,
 
-  // testnet
-  '1734439522': getPropagateParamsArbitrum,
-  '2053862260': getPropagateParamsZkSync,
-  '1668247156': getPropagateParamsConsensys,
+  // Testnet
+  '1734439522': getPropagateParametersArbitrum,
+  '2053862260': getPropagateParametersZkSync,
+  '1668247156': getPropagateParametersConsensys,
 };
 
-export async function populateParamsForDomains(
+export async function populateParametersForDomains(
   domains: string[],
   rootManagerMeta: RootManagerMeta,
-  setup: InitialSetup
-): Promise<ParamsForDomains> {
-  const _connectors: string[] = [];
-  const _encodedData: string[] = [];
-  const _fees: string[] = [];
-  let _totalFee = constants.Zero;
+  setup: InitialSetup,
+): Promise<ParametersForDomains> {
+  const connectors: string[] = [];
+  const encodedData: string[] = [];
+  const fees: string[] = [];
+  let totalFee = constants.Zero;
 
   for (const domain of domains) {
     const connector = rootManagerMeta.connectors[domains.indexOf(domain)];
-    _connectors.push(connector);
+    connectors.push(connector);
 
-    if (Object.keys(getParamsForDomainFn).includes(domain)) {
-      const getParamsForDomain = getParamsForDomainFn[domain];
-      const propagateParam = await getParamsForDomain(setup);
-      _encodedData.push(propagateParam._encodedData);
-      _fees.push(propagateParam._fee);
-      _totalFee = _totalFee.add(BigNumber.from(propagateParam._fee));
+    if (Object.keys(getParametersForDomainFn).includes(domain)) {
+      const getParametersForDomain = getParametersForDomainFn[domain];
+      const propagateParameter = await getParametersForDomain(setup);
+      encodedData.push(propagateParameter.encodedData);
+      fees.push(propagateParameter.fee);
+      totalFee = totalFee.add(BigNumber.from(propagateParameter.fee));
     } else {
-      _encodedData.push('0x');
-      _fees.push('0');
+      encodedData.push('0x');
+      fees.push('0');
     }
   }
 
   return {
-    connectors: _connectors,
-    encodedData: _encodedData,
-    fees: _fees,
+    connectors,
+    encodedData,
+    fees,
   };
 }
