@@ -17,38 +17,30 @@ export const getPropagateParameters = async ({txSigner, arbProvider, provider}: 
   const arbSdk = getArbitrumOneSdk(arbProvider);
   const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(arbProvider);
 
-  try {
-    // Example encoded payload: 0x4ff746f6000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000207465737400000000000000000000000000000000000000000000000000000000
-    // length = 200 not including 0x = 100 bytes
-    gasPriceBid = await provider.getGasPrice();
+  // Example encoded payload: 0x4ff746f6000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000207465737400000000000000000000000000000000000000000000000000000000
+  // length = 200 not including 0x = 100 bytes
+  gasPriceBid = await provider.getGasPrice();
 
-    const baseFee = await getBaseFee(provider);
-    const callData = arbSdk.spokeConnector.interface.encodeFunctionData('processMessage', [
-      '0x0000000000000000000000000000000000000000000000000000000000000001',
-    ]);
-    const l1ToL2MessageGasParameters = await l1ToL2MessageGasEstimate.estimateAll(
-      mainnetSdk.arbitrumHubConnector.address,
-      arbSdk.spokeConnector.address,
-      callData,
-      constants.Zero,
-      baseFee,
-      arbSdk.spokeConnector.address,
-      arbSdk.spokeConnector.address,
-      provider,
-    );
-    const gasLimitForAutoRedeem = l1ToL2MessageGasParameters.gasLimit.mul(5);
+  const baseFee = await getBaseFee(provider);
+  const callData = arbSdk.spokeConnector.interface.encodeFunctionData('processMessage', [
+    '0x0000000000000000000000000000000000000000000000000000000000000001',
+  ]);
+  const l1ToL2MessageGasParameters = await l1ToL2MessageGasEstimate.estimateAll(
+    mainnetSdk.arbitrumHubConnector.address,
+    arbSdk.spokeConnector.address,
+    callData,
+    constants.Zero,
+    baseFee,
+    arbSdk.spokeConnector.address,
+    arbSdk.spokeConnector.address,
+    provider,
+  );
+  const gasLimitForAutoRedeem = l1ToL2MessageGasParameters.gasLimit.mul(5);
 
-    submissionPriceWei = l1ToL2MessageGasParameters.maxSubmissionFee.mul(5).toString();
-    // Multiply gasLimit by 15 to be successful in auto-redeem
-    maxGas = gasLimitForAutoRedeem.toString();
-    callValue = BigNumber.from(submissionPriceWei).add(gasPriceBid.mul(maxGas)).toString();
-  } catch (error: unknown) {
-    console.log(error);
-    submissionPriceWei = '0';
-    maxGas = '0';
-    gasPriceBid = '0';
-    callValue = '0';
-  }
+  submissionPriceWei = l1ToL2MessageGasParameters.maxSubmissionFee.mul(5).toString();
+  // Multiply gasLimit by 15 to be successful in auto-redeem
+  maxGas = gasLimitForAutoRedeem.toString();
+  callValue = BigNumber.from(submissionPriceWei).add(gasPriceBid.mul(maxGas)).toString();
 
   const encodedData = utils.defaultAbiCoder.encode(['uint256', 'uint256', 'uint256'], [submissionPriceWei, maxGas, gasPriceBid]);
 
