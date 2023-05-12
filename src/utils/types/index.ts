@@ -1,4 +1,4 @@
-import type { providers, Wallet } from 'ethers';
+import type {providers, Wallet} from 'ethers';
 
 export * from './ordering';
 

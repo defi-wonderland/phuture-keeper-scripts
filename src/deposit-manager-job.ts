@@ -1,5 +1,5 @@
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
-import type { TransactionRequest } from '@ethersproject/abstract-provider';
+import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
+import type {TransactionRequest} from '@ethersproject/abstract-provider';
 import {
   BlockListener,
   createBundlesWithSameTxs,
@@ -9,9 +9,9 @@ import {
   sendAndRetryUntilNotWorkable,
 } from '@keep3r-network/keeper-scripting-utils';
 import dotenv from 'dotenv';
-import type { Contract } from 'ethers';
-import { loadInitialSetup } from './shared/setup';
-import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE } from './utils/contants';
+import type {Contract} from 'ethers';
+import {loadInitialSetup} from './shared/setup';
+import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE} from './utils/contants';
 
 dotenv.config();
 
@@ -20,7 +20,7 @@ dotenv.config();
 /*============================================================== */
 
 // pull environment variables
-const { provider, txSigner, bundleSigner } = loadInitialSetup();
+const {provider, txSigner, bundleSigner} = loadInitialSetup();
 
 const blockListener = new BlockListener(provider);
 const job = getMainnetSdk(txSigner).depositManagerJob;
@@ -75,7 +75,7 @@ export async function run(): Promise<void> {
       // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
       // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
       //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-      const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
+      const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
         block,
         blocksAhead,
         priorityFeeInWei: PRIORITY_FEE,
@@ -83,7 +83,7 @@ export async function run(): Promise<void> {
 
       // We declare what options we would like our transaction to have
       const options = {
-        gasLimit: 10_000_000,
+        gasLimit: 5_000_000,
         nonce: currentNonce,
         maxFeePerGas,
         maxPriorityFeePerGas: priorityFeeInGwei,

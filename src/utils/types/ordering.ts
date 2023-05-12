@@ -1,4 +1,4 @@
-import type { BigNumberish, BytesLike } from 'ethers';
+import type {BigNumberish, BytesLike} from 'ethers';
 
 type Address = string;
 
@@ -20,5 +20,5 @@ export type Order = {
     sellShares: BigNumberish;
     swapTarget: Address;
     swapData: BytesLike;
-  }
+  };
 };

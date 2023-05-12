@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
-import { providers, Wallet } from 'ethers';
-import { getEnvVariable } from '../utils/misc';
-import type { InitialSetup } from '../utils/types';
+import {providers, Wallet} from 'ethers';
+import {getEnvVariable} from '../utils/misc';
+import type {InitialSetup} from '../utils/types';
 
 dotenv.config();
 
