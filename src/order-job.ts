@@ -1,6 +1,6 @@
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
-import type { TransactionRequest } from '@ethersproject/abstract-provider';
-import type { Contract } from 'ethers';
+import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
+import type {TransactionRequest} from '@ethersproject/abstract-provider';
+import type {Contract} from 'ethers';
 import isEqual from 'lodash.isequal';
 import {
   createBundlesWithSameTxs,
@@ -10,11 +10,11 @@ import {
   Flashbots,
   BlockListener,
 } from '@keep3r-network/keeper-scripting-utils';
-import { request } from 'undici';
+import {request} from 'undici';
 import dotenv from 'dotenv';
-import { loadInitialSetup } from './shared/setup';
-import type { Order } from './utils/types';
-import { BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE } from './utils/contants';
+import {loadInitialSetup} from './shared/setup';
+import type {Order} from './utils/types';
+import {BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, ORDER_API_URL, PRIORITY_FEE} from './utils/contants';
 
 dotenv.config();
 
@@ -23,7 +23,7 @@ dotenv.config();
 /*============================================================== */
 
 // pull environment variables
-const { provider, txSigner, bundleSigner } = loadInitialSetup();
+const {provider, txSigner, bundleSigner} = loadInitialSetup();
 
 const blockListener = new BlockListener(provider);
 const job = getMainnetSdk(txSigner).orderJob;
@@ -57,7 +57,7 @@ export async function run(): Promise<void> {
     }
 
     // Call the API to see if there's an order that needs to be executed
-    const { statusCode, body } = await request(ORDER_API_URL);
+    const {statusCode, body} = await request(ORDER_API_URL);
 
     // Emit the logs according to the status code the API gave us. If the status code is not 200, return.
     switch (statusCode) {
@@ -73,8 +73,8 @@ export async function run(): Promise<void> {
     }
 
     // If we get 200 as the status code, we parse the body of the response
-    const { data } = await body.json();
-    const { type, signs, external } = data[0] as Order;
+    const {data} = await body.json();
+    const {type, signs, external} = data[0] as Order;
 
     // Define variables whose values will depend on whether we need to send a external or internal order
     const functionToCall = 'externalSwap';
@@ -100,7 +100,7 @@ export async function run(): Promise<void> {
       // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
       // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
       //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-      const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
+      const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
         block,
         blocksAhead,
         priorityFeeInWei: PRIORITY_FEE,
@@ -108,7 +108,7 @@ export async function run(): Promise<void> {
 
       // We declare what options we would like our transaction to have
       const options = {
-        gasLimit: 10_000_000,
+        gasLimit: 3_000_000,
         nonce: currentNonce,
         maxFeePerGas,
         maxPriorityFeePerGas: priorityFeeInGwei,
@@ -150,16 +150,16 @@ export async function run(): Promise<void> {
           // by doing a call to their API. If the status is not 200, it means that the order is not available anymore.
           // If the status is 200, but a different order from the one we populated the first time we fetched the API is
           // returned, then we need to return and recompute our transaction to work that new order.
-          const { statusCode, body } = await request(ORDER_API_URL);
+          const {statusCode, body} = await request(ORDER_API_URL);
           if (statusCode !== 200) return false;
-          const { data } = await body.json();
-          const { type, signs, ...order } = data[0] as Order;
+          const {data} = await body.json();
+          const {type, signs, ...order} = data[0] as Order;
 
           // If the returned type is either external or internal
-          if (type === "external") {
+          if (type === 'external') {
             const parameter = (order as Order).external;
             // We verify that the work needed is still the same as the one requested initially
-            if (isEqual({...parameter, swapData: null }, {...external, swapData: null})) return true;
+            if (isEqual({...parameter, swapData: null}, {...external, swapData: null})) return true;
             // In case not, restart the script
             console.log('The order differs from the one in our transaction. Restarting the script.');
             return false;
