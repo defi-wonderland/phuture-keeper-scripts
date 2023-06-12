@@ -1,12 +1,12 @@
-import {BigNumber, constants, utils} from 'ethers';
-import {L1ToL2MessageGasEstimator} from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator';
-import {getBaseFee} from '@arbitrum/sdk/dist/lib/utils/lib';
-import {getArbitrumOneSdk, getMainnetSdk} from '@dethcrypto/eth-sdk-client';
+import { L1ToL2MessageGasEstimator } from '@arbitrum/sdk/dist/lib/message/L1ToL2MessageGasEstimator';
+import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib';
+import { getArbitrumOneSdk, getMainnetSdk } from '@dethcrypto/eth-sdk-client';
+import { BigNumber, constants, utils } from 'ethers';
 
-import {type ExtraPropagateParameters, type InitialSetup} from 'src/utils/types';
+import { type ExtraPropagateParameters, type InitialSetup } from 'src/utils/types';
 
 // Example at https://github.com/OffchainLabs/arbitrum-tutorials/blob/master/packages/greeter/scripts/exec.js
-export const getPropagateParameters = async ({txSigner, arbProvider, provider}: InitialSetup): Promise<ExtraPropagateParameters> => {
+export const getPropagateParameters = async ({ txSigner, arbProvider, provider }: InitialSetup): Promise<ExtraPropagateParameters> => {
   const mainnetSdk = getMainnetSdk(txSigner);
 
   const arbSdk = getArbitrumOneSdk(arbProvider);
@@ -21,23 +21,26 @@ export const getPropagateParameters = async ({txSigner, arbProvider, provider}: 
     '0x0000000000000000000000000000000000000000000000000000000000000001',
   ]);
   const l1ToL2MessageGasParameters = await l1ToL2MessageGasEstimate.estimateAll(
-    mainnetSdk.arbitrumHubConnector.address,
-    arbSdk.spokeConnector.address,
-    callData,
-    constants.Zero,
+    {
+      from: mainnetSdk.arbitrumHubConnector.address,
+      to: arbSdk.spokeConnector.address,
+      data: callData,
+      l2CallValue: constants.Zero,
+      callValueRefundAddress: arbSdk.spokeConnector.address,
+      excessFeeRefundAddress: arbSdk.spokeConnector.address,
+    },
     baseFee,
-    arbSdk.spokeConnector.address,
-    arbSdk.spokeConnector.address,
-    provider,
+    provider
   );
+
   const gasLimitForAutoRedeem = l1ToL2MessageGasParameters.gasLimit.mul(5);
 
-  const submissionPriceWei = l1ToL2MessageGasParameters.maxSubmissionFee.mul(5).toString();
+  const submissionPriceWei = l1ToL2MessageGasParameters.maxSubmissionCost.mul(5).toString();
   // Multiply gasLimit by 15 to be successful in auto-redeem
   const maxGas = gasLimitForAutoRedeem.toString();
   const callValue = BigNumber.from(submissionPriceWei).add(gasPriceBid.mul(maxGas)).toString();
 
   const encodedData = utils.defaultAbiCoder.encode(['uint256', 'uint256', 'uint256'], [submissionPriceWei, maxGas, gasPriceBid]);
 
-  return {connector: '', fee: callValue, encodedData};
+  return { connector: '', fee: callValue, encodedData };
 };
