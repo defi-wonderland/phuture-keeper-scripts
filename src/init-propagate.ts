@@ -1,5 +1,5 @@
 import process from 'node:process';
-import {getMainnetSdk, getGoerliSdk, MainnetSdk} from '@dethcrypto/eth-sdk-client';
+import {getMainnetSdk, getGoerliSdk} from '@dethcrypto/eth-sdk-client';
 import {providers, Wallet} from 'ethers';
 import {FlashbotsBundleProvider} from '@flashbots/ethers-provider-bundle';
 import {FlashbotsBroadcastor, getEnvVariable, MempoolBroadcastor} from '@keep3r-network/keeper-scripting-utils';
